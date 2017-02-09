@@ -91,3 +91,14 @@ convert_ranks <- function(rp) {
   x[idx] <- as.integer(rp[idx])
   x
 }
+
+convert_scores <-function(scores) {
+  if (any(grepl(":", scores))) {
+    ms(scores, quiet = TRUE)
+  } else {
+    x <- rep_len(integer(), length(scores))
+    idx <- which(scores != "--")
+    x[idx] <- as.integer(scores[idx])
+    x
+  }
+}
