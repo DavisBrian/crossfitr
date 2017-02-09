@@ -1,0 +1,20 @@
+---
+output:
+  md_document:
+    variant: markdown_github
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+# crossfitr
+ 
+ This is code to help scrape and analyze crossfit open worksout.  The cod eis heavily borrowed from https://github.com/swiftsam/CrossfitRankings
+ 
+ 
