@@ -85,20 +85,20 @@ page2df <- function(html_page) {
 }
 
 
-convert_ranks <- function(rp) {
-  x <- rep_len(integer(), length(rp))
-  idx <- which(rp != "-- ")
-  x[idx] <- as.integer(rp[idx])
+convert_ranks <- function(rank_str) {
+  x <- rep_len(integer(), length(rank_str))
+  idx <- which(rank_str != "-- ")
+  x[idx] <- as.integer(rank_str[idx])
   x
 }
 
-convert_scores <-function(scores) {
-  if (any(grepl(":", scores))) {
-    ms(scores, quiet = TRUE)
+convert_scores <-function(scores_str) {
+  if (any(grepl(":", scores_str))) {
+    ms(scores_str, quiet = TRUE)
   } else {
-    x <- rep_len(integer(), length(scores))
-    idx <- which(scores != "--")
-    x[idx] <- as.integer(scores[idx])
+    x <- rep_len(integer(), length(scores_str))
+    idx <- which(scores_str != "--")
+    x[idx] <- as.integer(scores_str[idx])
     x
   }
 }
