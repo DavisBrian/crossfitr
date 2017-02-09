@@ -1,36 +1,87 @@
 # development
 library(tidyverse)
+library(lubridate)
 library(stringr)
 library(rvest)
 
 source("./R/scrape_fns.R")
 
-year = 14
-division = 1
-stage = 1
-page = 1
-score_type = "points"
+workout <- "15.4"
+division <- 1
+scaled <- FALSE
+page <- 1
 
-url <- create_url(year = 14, division = 1, stage = 1, page = 1)
+params <- get_params(workout, division)
+url <- create_leaderboard_url(params)
+
 html_page <- read_page(url)
-
 athlete_urls <- get_athlete_urls(html_page)
 athlete_ids <- get_athlete_ids(athlete_urls)
+p1 <- page2df(html_page)
 
-rank_scores <- get_rank_scores(html_page, stage = 1)
+rank_scores <- get_rank_scores(html_page, params$stage)
+
+# year = 15
+# division = 1
+# stage = 1
+# page = 1
+# score_type = "points"
+# 
+# url <- create_url(year, division, stage, page)
+# # url <- "https://games.crossfit.com/scores/leaderboard.php?stage=0&sort=4&division=1&region=0&regional=8&numberperpage=100&page=0&competition=0&frontpage=0&expanded=0&full=1&year=15&showtoggles=0&hidedropdowns=1&showathleteac=1&athletename=&fittest=1&fitSelect=0&scaled=1&occupation=0"
+# html_page <- read_page(url)
+# 
+# athlete_urls <- get_athlete_urls(html_page)
+# athlete_ids <- get_athlete_ids(athlete_urls)
+
+
+
+# n <- 8
+# rank_scores <- p1[ , n]
+# colnames(rank_scores) <- "WOD"
+
+rs <- separate(rank_scores, WOD, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
+  mutate(rank       = convert_ranks(rank_pre),
+         scores     = convert_scores(score_pre),
+         scaled_flg = convert_scaled(scaled_pre),
+         retrieved_datetime = Sys.time())
+
+rs %>% View()
+
+leaderboard <- html_page %>%
+  
+
+rp <- convert_rank(rs$rank_pre)
+scores <- convert_scores(rs$score_pre) 
+scores <- rs$score_pre
+
+scaled <- convert_scaled(rs$scaled_pre)
+identical(scaled, TRUE)
+
+scaled_str <- rs$scaled_pre
+
+convert_scaled <- function(scaled_str) {
+  case_when(
+    scaled_str == " - s" ~ TRUE,
+    scaled_str == ""     ~ FALSE,
+    TRUE                 ~ NA
+    # scaled_str == "\n                    No score" ~ NA,
+  )
+}
+
+is_scaled <- function(x) { !is.na(x) & x }
+is_rxd    <- function(x) { !is.na(x) & !x }
 
 # split_scores
 
+separate(rank_scores, "Workout05", c("rank", "score", "scaled"), sep = "[\\(\\)]") %>%
+  mutate(rank = if_else(rank == "-- ", as.integer(NA), as.integer(rank)),
+         scaled = (scaled == " - s"),
+         score  = ms(score))
 
-lapply(rank_scores, function(x) {str_split(x, "[\\(\\)]")[[1]]})
-# parse rank
-rank_scores %>%
-  mutate(rank = if_else(rank_scores == "--\n                No score", 
-                        as.integer(NA),
-                        as.integer(sub(" .*", "", .))))
-as.integer(sub(" .*", "", rank_scores))
-# parse scores
-
+convert_rank <- function(rank) {
+  if_else(rank == "--", as.integer(NA), as.integer(rank))
+}
 
 # is_scaled
 
@@ -41,10 +92,4 @@ leaderboard[,scaled := as.integer(substring(rank_score,
                                             nchar(rank_score)-3,
                                             nchar(rank_score)) == " - s")]
 
-# split the scores into rank and score
 
-# create the leaderboard
-leaderboard <- data_frame(year       = year,
-                          division   = division,
-                          stage      = stage,
-                          athlete_id = get_athlete_ids(get_athlete_urls(html_page)))

@@ -118,3 +118,74 @@ convert_scaled <- function(scaled_str) {
 is_scaled <- function(x) { !is.na(x) & x }
 is_rxd    <- function(x) { !is.na(x) & !x }
 
+
+get_year <- function(workout) {
+  yr <- str_split(workout, "\\.")[[1]][1]
+  if (!(yr %in% c("12", "13", "14", "15", "16", "17"))) {
+    stop(paste0(yr, " is not a valid year to pull from."))
+  }
+  yr
+}
+
+get_stage <- function(workout) {
+  yr <- get_year(workout)
+  stg <- toupper(str_split(workout, "\\.")[[1]][2])
+  
+  if (yr == "15") {
+    stage_list <- c("1", "1A", "2", "3", "4", "5")
+  } else {
+    stage_list <- c("1", "2", "3", "4", "5")
+  }
+  
+  if (!(stg %in% stage_list)) {
+    stop(paste0("Stage: ", stg, " is not a valid stage for 20", yr))
+  } else {
+    stage = which(stage_list %in% stg)
+  }
+  
+  as.character(stage)
+}
+
+# division
+#  1 = "Individual Men"
+#  2 = "Individual Women"
+#  3 = "Masters Men 45-49"
+#  4 = "Masters Women 45-49"
+#  5 = "Masters Men 50-54"
+#  6 = "Masters Women 50-54"
+#  7 = "Masters Men 55-59"
+#  8 = "Masters Women 55-59"
+#  9 = "Masters Men 60+"
+# 10 = "Masters Women 60+"
+# 11 = "Team"
+# 12 = "Masters Men 40-44"
+# 13 = "Masters Women 40-44"
+# 14 = "Teenage Boys 14-15"
+# 15 = "Teenage Girls 14-15"
+# 16 = "Teenage Boys 16-17"
+# 17 = "Teenage Girls 16-17"
+check_division <- function(division, year = NULL) {
+  if (is.null(year)) {
+    if (!between(division, 1, 17)) {
+      stop("Invalid division.")
+    }
+  }
+  
+  year_int <- as.integer(year)
+  
+  if (year_int >= 15) {
+    if (!between(division, 1, 17)) {
+      stop(paste0("Invalid division for 20", year, "."))
+    } 
+  } else if (year_int == 14) {
+    if (!between(division, 1, 13)) {
+      stop(paste0("Invalid division for 20", year, "."))
+    } 
+  } else if (year_int < 14) {
+    if (!between(division, 1, 11)) {
+      stop(paste0("Invalid division for 20", year, "."))
+    } 
+  }
+  
+  invisible(NULL)
+}
