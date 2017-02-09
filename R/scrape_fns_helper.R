@@ -83,3 +83,11 @@ page2df <- function(html_page) {
   
   as_tibble(p)
 }
+
+
+convert_ranks <- function(rp) {
+  x <- rep_len(integer(), length(rp))
+  idx <- which(rp != "-- ")
+  x[idx] <- as.integer(rp[idx])
+  x
+}
