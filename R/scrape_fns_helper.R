@@ -65,10 +65,21 @@ get_athlete_ids <- function(athlete_urls) {
 }
 
 get_rank_scores <- function(html_page, stage = 0) {
-  rs <- html_table(html_page, fill=TRUE)[[1]] 
+  rs <- html_table(html_page, fill=TRUE)[[1]]
   if(stage == 1.1){
-    rs[paste0("Workout01A")]
+    as_tibble(rs[paste0("Workout01A")])
   } else {
-    rs[paste0("Workout0",stage)]
+    as_tibble(rs[paste0("Workout0",stage)])
   }
+}
+
+page2df <- function(html_page) {
+  p <- html_table(html_page, fill=TRUE)[[1]]
+  if (colnames(p)[1] == "") {
+    colnames(p)[1] <- "Rank"
+  } else {
+    stop("Unexpected name in column 1.")
+  }
+  
+  as_tibble(p)
 }
