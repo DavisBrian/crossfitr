@@ -1,4 +1,6 @@
 # scrape helper functions
+library(tidyverse)
+library(rvest)
 
 # create the url at games.crossfit.com to get the scores -----------------------
 # stage=0&
@@ -34,8 +36,8 @@ create_url <- function(year = 14, division = 1, stage = 1, page = 1){
 }
 
 # read the page at games.crossfit.com ------------------------------------------
-read_page <- function(year = 14, division = 1, stage = 1, page = 1) {
-  tryCatch({read_html(create_url(year, division, stage, page))},
+read_page <- function(xfit_url) {
+  tryCatch({read_html(xfit_url)},
            error = function(cond) { return(NULL) })
 }
 
@@ -62,11 +64,11 @@ get_athlete_ids <- function(athlete_urls) {
   as.integer(sapply(athlete_urls, get_athlete_id))
 }
 
-get_scores <- function(html_page, stage = 0) {
-  scores <- html_table(html_page, fill=TRUE)[[1]] 
+get_rank_scores <- function(html_page, stage = 0) {
+  rs <- html_table(html_page, fill=TRUE)[[1]] 
   if(stage == 1.1){
-    scores[paste0("Workout01A")]
+    rs[paste0("Workout01A")]
   } else {
-    scores[paste0("Workout0",stage)]
+    rs[paste0("Workout0",stage)]
   }
 }
