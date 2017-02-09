@@ -102,3 +102,16 @@ convert_scores <-function(scores_str) {
     x
   }
 }
+
+convert_scaled <- function(scaled_str) {
+  case_when(
+    scaled_str == " - s" ~ TRUE,
+    scaled_str == ""     ~ FALSE,
+    TRUE                 ~ NA
+    # scaled_str == "\n                    No score" ~ NA,
+  )
+}
+
+is_scaled <- function(x) { !is.na(x) & x }
+is_rxd    <- function(x) { !is.na(x) & !x }
+
