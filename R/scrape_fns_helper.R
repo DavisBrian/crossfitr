@@ -1,6 +1,9 @@
 # scrape helper functions
 library(tidyverse)
+library(lubridate)
+library(stringr)
 library(rvest)
+
 
 # create the url at games.crossfit.com to get the scores -----------------------
 # stage=0&
@@ -29,7 +32,7 @@ library(rvest)
 # 
 create_url <- function(year = 14, division = 1, stage = 1, page = 1){
   paste0(
-    "http://games.crossfit.com/scores/leaderboard.php?stage=",round(stage),"&sort=",round(stage),"&page=",page,
+    "https://games.crossfit.com/scores/leaderboard.php?stage=",round(stage),"&sort=",round(stage),"&page=",page,
     "&division=",division,"&region=0&numberperpage=100&competition=0&frontpage=0",
     "&expanded=0&year=",year,"&full=1&showtoggles=0&hidedropdowns=1",
     "&showathleteac=1&is_mobile=1")
