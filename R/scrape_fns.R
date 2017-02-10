@@ -27,4 +27,9 @@ get_params <- function(workout, division, scaled = FALSE) {
        npages   = as.integer(NA))
 }
 
+# read the page at games.crossfit.com ------------------------------------------
+read_page <- function(xfit_url) {
+  tryCatch({read_html(xfit_url)},
+           error = function(cond) { return(NULL) })
+}
 

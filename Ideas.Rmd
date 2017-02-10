@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ## Todo list
 
 *  parallel for leadearbaord scrape
+*  add athelte name to score (so we can use / match to athlete stats table)
 
 (http://stackoverflow.com/questions/6780091/simple-working-example-of-ddply-in-parallel-on-windows)
 https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
