@@ -41,3 +41,23 @@ create_leaderboard_url <- function(params, page = 1) {
          "&year=", yr, "&scaled=", scaled,
          "&full=1&showtoggles=0&hidedropdowns=1&showathleteac=1&is_mobile=1")
 }
+
+get_leaderboard_page <- function(params, page) {
+  url <- create_leaderboard_url(params, page)
+  html_page <- read_page(url)
+  
+  leaderboard <- data_frame(workout     = params$workout,
+                            year        = params$year,
+                            division    = params$division,
+                            athlete_url = get_athlete_urls(html_page),
+                            athlete_id  = get_athlete_ids(athlete_url),
+                            rank_score = get_rank_scores(html_page, params$stage$stage)[[1]]) %>%
+    separate(rank_score, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
+    mutate(rank       = convert_ranks(rank_pre),
+           scores     = convert_scores(score_pre),
+           scaled_flg = convert_scaled(scaled_pre),
+           retrieved_datetime = Sys.time()) %>%
+    select(-rank_score, -ends_with("pre"))
+  
+  leaderboard
+}

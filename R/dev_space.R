@@ -11,12 +11,28 @@ division <- 1
 scaled <- FALSE
 page <- 1
 
-params <- get_params(workout, division)
+
+
+get_leaderboard_page(params, page = 1) %>% View()
+
+get_leaderboard <- function(workout, division, scaled = FALSE) {
+  params <- get_params(workout, division, scaled)
+  url <- create_leaderboard_url(params)
+  
+  npages <- url %>%
+    read_page() %>%
+    get_page_count()
+  
+  leaderboard <- plyr::ldply(seq(1:npages), get_leaderboard_page, params = params)
+  
+  leaderbaord
+}
+
 url <- create_leaderboard_url(params)
 gender <- get_gender(params$division)
 
-html_page <- read_page(url)
-npages <- get_page_count(html_page)
+
+
 athlete_urls <- get_athlete_urls(html_page)
 athlete_ids <- get_athlete_ids(athlete_urls)
 # p1 <- page2df(html_page)
