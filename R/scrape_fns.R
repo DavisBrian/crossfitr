@@ -22,7 +22,7 @@ get_params <- function(workout, division, scaled = FALSE) {
   list(workout  = workout,
        year     = year, 
        stage    = stage,
-       division = division,
+       division = as.integer(division),
        scaled   = scaled,
        npages   = as.integer(NA))
 }

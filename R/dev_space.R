@@ -19,29 +19,22 @@ html_page <- read_page(url)
 npages <- get_page_count(html_page)
 athlete_urls <- get_athlete_urls(html_page)
 athlete_ids <- get_athlete_ids(athlete_urls)
-p1 <- page2df(html_page)
+# p1 <- page2df(html_page)
 
 rank_scores <- get_rank_scores(html_page, params$stage$stage)
 
-# get page
-
-# put the pages together
-
-# get athlete info
-
-# year = 15
-# division = 1
-# stage = 1
-# page = 1
-# score_type = "points"
-# 
-# url <- create_url(year, division, stage, page)
-# # url <- "https://games.crossfit.com/scores/leaderboard.php?stage=0&sort=4&division=1&region=0&regional=8&numberperpage=100&page=0&competition=0&frontpage=0&expanded=0&full=1&year=15&showtoggles=0&hidedropdowns=1&showathleteac=1&athletename=&fittest=1&fitSelect=0&scaled=1&occupation=0"
-# html_page <- read_page(url)
-# 
-# athlete_urls <- get_athlete_urls(html_page)
-# athlete_ids <- get_athlete_ids(athlete_urls)
-
+leaderboard <- data_frame(workout     = params$workout,
+                          year        = params$year,
+                          division    = params$division,
+                          athlete_url = get_athlete_urls(html_page),
+                          athlete_id  = get_athlete_ids(athlete_urls),
+                          rank_score = get_rank_scores(html_page, params$stage$stage)[[1]]) %>%
+  separate(rank_score, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
+  mutate(rank       = convert_ranks(rank_pre),
+         scores     = convert_scores(score_pre),
+         scaled_flg = convert_scaled(scaled_pre),
+         retrieved_datetime = Sys.time()) %>%
+  select(-rank_score, -ends_with("pre"))
 
 
 # n <- 8
