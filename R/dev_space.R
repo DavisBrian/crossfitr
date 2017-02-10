@@ -6,20 +6,28 @@ library(rvest)
 
 source("./R/scrape_fns.R")
 
-workout <- "15.4"
+workout <- "15.3"
 division <- 1
 scaled <- FALSE
 page <- 1
 
 params <- get_params(workout, division)
 url <- create_leaderboard_url(params)
+gender <- get_gender(params$division)
 
 html_page <- read_page(url)
+npages <- get_page_count(html_page)
 athlete_urls <- get_athlete_urls(html_page)
 athlete_ids <- get_athlete_ids(athlete_urls)
 p1 <- page2df(html_page)
 
-rank_scores <- get_rank_scores(html_page, params$stage)
+rank_scores <- get_rank_scores(html_page, params$stage$stage)
+
+# get page
+
+# put the pages together
+
+# get athlete info
 
 # year = 15
 # division = 1

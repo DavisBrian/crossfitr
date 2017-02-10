@@ -29,10 +29,15 @@ get_params <- function(workout, division, scaled = FALSE) {
 
 
 create_leaderboard_url <- function(params, page = 1) {
-  paste0("https://games.crossfit.com/scores/leaderboard.php?stage=", params$stage,
-         "&sort=", params$stage,"&page=", page,"&division=", params$division,
-         "&region=0&numberperpage=100&competition=0&frontpage=0&expanded=0",
-         "&year=", params$year, "&scaled=", params$scaled,
-         "&full=1&showtoggles=0&hidedropdowns=1&showathleteac=1&is_mobile=1")
+  stage = params$stage$stage_pos
+  sort  = params$stage$stage_pos
+  div   = params$division
+  yr    = params$year
+  scaled  = params$scaled
   
+  paste0("https://games.crossfit.com/scores/leaderboard.php?stage=", stage,
+         "&sort=", sort,"&page=", page,"&division=", div,
+         "&region=0&numberperpage=100&competition=0&frontpage=0&expanded=0",
+         "&year=", yr, "&scaled=", scaled,
+         "&full=1&showtoggles=0&hidedropdowns=1&showathleteac=1&is_mobile=1")
 }

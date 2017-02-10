@@ -30,13 +30,13 @@ library(rvest)
 # DIVISION
 # SORT
 # 
-create_url <- function(year = 14, division = 1, stage = 1, page = 1){
-  paste0(
-    "https://games.crossfit.com/scores/leaderboard.php?stage=",round(stage),"&sort=",round(stage),"&page=",page,
-    "&division=",division,"&region=0&numberperpage=100&competition=0&frontpage=0",
-    "&expanded=0&year=",year,"&full=1&showtoggles=0&hidedropdowns=1",
-    "&showathleteac=1&is_mobile=1")
-}
+# create_url <- function(year = 14, division = 1, stage = 1, page = 1){
+#   paste0(
+#     "https://games.crossfit.com/scores/leaderboard.php?stage=",round(stage),"&sort=",round(stage),"&page=",page,
+#     "&division=",division,"&region=0&numberperpage=100&competition=0&frontpage=0",
+#     "&expanded=0&year=",year,"&full=1&showtoggles=0&hidedropdowns=1",
+#     "&showathleteac=1&is_mobile=1")
+# }
 
 # read the page at games.crossfit.com ------------------------------------------
 read_page <- function(xfit_url) {
@@ -69,11 +69,7 @@ get_athlete_ids <- function(athlete_urls) {
 
 get_rank_scores <- function(html_page, stage = 0) {
   rs <- html_table(html_page, fill=TRUE)[[1]]
-  if(stage == 1.1){
-    as_tibble(rs[paste0("Workout01A")])
-  } else {
-    as_tibble(rs[paste0("Workout0",stage)])
-  }
+  as_tibble(rs[paste0("Workout0",stage)])
 }
 
 page2df <- function(html_page) {
@@ -143,9 +139,21 @@ get_stage <- function(workout) {
     stage = which(stage_list %in% stg)
   }
   
-  as.character(stage)
+  list(stage_pos = as.character(stage),
+       stage     = stg)
 }
 
+get_gender <- function(division) {
+  coed_divs   <- c(11)
+  male_divs   <- c(1, 3, 5, 7, 9, 12, 14, 16)
+  female_divs <- c(2, 4, 6, 8, 10, 13, 15, 17)
+  case_when(
+    division %in% coed_divs   ~ "COED",
+    division %in% male_divs   ~ "M",    
+    division %in% female_divs ~ "F",
+    TRUE                      ~ as.character(NA)
+  )
+}
 # division
 #  1 = "Individual Men"
 #  2 = "Individual Women"
@@ -188,4 +196,9 @@ check_division <- function(division, year = NULL) {
   }
   
   invisible(NULL)
+}
+
+get_page_count <- function(html_page) {
+  # as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[[1]]))
+  as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[1]))
 }
