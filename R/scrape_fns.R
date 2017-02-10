@@ -14,7 +14,7 @@ get_params <- function(workout, division, scaled = FALSE) {
   if (length(scaled) != 1L) {
     stop("Only one value for scaled allowed.")
   }
-  if (as.integer(year) < 15L) {
+  if (as.integer(year) < 15L & scaled) {
     stop(paste0("Scaled was not an otion in 20", year))
   }
   scaled <- as.character(as.integer(scaled))

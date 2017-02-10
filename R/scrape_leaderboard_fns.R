@@ -21,17 +21,17 @@ get_leaderboard_page <- function(params, page) {
   html_page <- read_page(url)
   
   leaderboard <- data_frame(workout     = params$workout,
-                            # year        = params$year,
+                            year        = params$year,
                             division    = params$division,
-                            # athlete_url = get_athlete_urls(html_page),
+                            athlete_url = get_athlete_urls(html_page),
                             athlete_id  = get_athlete_ids(athlete_url),
                             rank_score = get_rank_scores(html_page, params$stage$stage)[[1]]) %>%
     separate(rank_score, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
     mutate(rank       = convert_ranks(rank_pre),
            score      = convert_scores(score_pre),
-           scaled_flg = convert_scaled(scaled_pre),
+           scaled_flg = if_else(year >= 15L, convert_scaled(scaled_pre), FALSE),
            retrieved_datetime = Sys.time()) %>%
-    select(-rank_score, -ends_with("pre"))
+    select(- athlete_url, -rank_score, -ends_with("pre")) %>% View()
   
   leaderboard
 }
