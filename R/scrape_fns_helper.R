@@ -154,6 +154,7 @@ get_gender <- function(division) {
     TRUE                      ~ as.character(NA)
   )
 }
+
 # division
 #  1 = "Individual Men"
 #  2 = "Individual Women"
@@ -172,6 +173,7 @@ get_gender <- function(division) {
 # 15 = "Teenage Girls 14-15"
 # 16 = "Teenage Boys 16-17"
 # 17 = "Teenage Girls 16-17"
+
 check_division <- function(division, year = NULL) {
   if (is.null(year)) {
     if (!between(division, 1, 17)) {

@@ -8,6 +8,12 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+## Todo list
+
+*  parallel for leadearbaord scrape
+
+(http://stackoverflow.com/questions/6780091/simple-working-example-of-ddply-in-parallel-on-windows)
+https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf
 
 ## Pre-OPEN
 
@@ -26,5 +32,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 https://hdoran.shinyapps.io/openAnalysis/
 http://swift.pw/posts/
+https://games.crossfit.com/article/153-leaderboard-analysis
 
 

@@ -4,109 +4,23 @@ library(lubridate)
 library(stringr)
 library(rvest)
 
-source("./R/scrape_fns.R")
+source("./R/scrape_leaderboard_fns.R")
 
 workout <- "15.3"
 division <- 1
 scaled <- FALSE
 page <- 1
 
-
-
-get_leaderboard_page(params, page = 1) %>% View()
-
-get_leaderboard <- function(workout, division, scaled = FALSE) {
-  params <- get_params(workout, division, scaled)
-  url <- create_leaderboard_url(params)
-  
-  npages <- url %>%
-    read_page() %>%
-    get_page_count()
-  
-  leaderboard <- plyr::ldply(seq(1:npages), get_leaderboard_page, params = params)
-  
-  leaderbaord
-}
-
-url <- create_leaderboard_url(params)
-gender <- get_gender(params$division)
+# params <- get_params(workout, division, scaled)
+# x <- get_leaderboard_page(params, page = 1) %>% View()
 
 
 
-athlete_urls <- get_athlete_urls(html_page)
-athlete_ids <- get_athlete_ids(athlete_urls)
-# p1 <- page2df(html_page)
+t1 <- Sys.time()
 
-rank_scores <- get_rank_scores(html_page, params$stage$stage)
+open15_3 <- get_leaderboard(workout, division, scaled)
 
-leaderboard <- data_frame(workout     = params$workout,
-                          year        = params$year,
-                          division    = params$division,
-                          athlete_url = get_athlete_urls(html_page),
-                          athlete_id  = get_athlete_ids(athlete_urls),
-                          rank_score = get_rank_scores(html_page, params$stage$stage)[[1]]) %>%
-  separate(rank_score, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
-  mutate(rank       = convert_ranks(rank_pre),
-         scores     = convert_scores(score_pre),
-         scaled_flg = convert_scaled(scaled_pre),
-         retrieved_datetime = Sys.time()) %>%
-  select(-rank_score, -ends_with("pre"))
+t2 <- Sys.time()
 
-
-# n <- 8
-# rank_scores <- p1[ , n]
-# colnames(rank_scores) <- "WOD"
-
-rs <- separate(rank_scores, WOD, c("rank_pre", "score_pre", "scaled_pre"), sep = "[\\(\\)]", remove = FALSE) %>%
-  mutate(rank       = convert_ranks(rank_pre),
-         scores     = convert_scores(score_pre),
-         scaled_flg = convert_scaled(scaled_pre),
-         retrieved_datetime = Sys.time())
-
-rs %>% View()
-
-leaderboard <- html_page %>%
-  
-
-rp <- convert_rank(rs$rank_pre)
-scores <- convert_scores(rs$score_pre) 
-scores <- rs$score_pre
-
-scaled <- convert_scaled(rs$scaled_pre)
-identical(scaled, TRUE)
-
-scaled_str <- rs$scaled_pre
-
-convert_scaled <- function(scaled_str) {
-  case_when(
-    scaled_str == " - s" ~ TRUE,
-    scaled_str == ""     ~ FALSE,
-    TRUE                 ~ NA
-    # scaled_str == "\n                    No score" ~ NA,
-  )
-}
-
-is_scaled <- function(x) { !is.na(x) & x }
-is_rxd    <- function(x) { !is.na(x) & !x }
-
-# split_scores
-
-separate(rank_scores, "Workout05", c("rank", "score", "scaled"), sep = "[\\(\\)]") %>%
-  mutate(rank = if_else(rank == "-- ", as.integer(NA), as.integer(rank)),
-         scaled = (scaled == " - s"),
-         score  = ms(score))
-
-convert_rank <- function(rank) {
-  if_else(rank == "--", as.integer(NA), as.integer(rank))
-}
-
-# is_scaled
-
-leaderboard[rank_score == "--\n                No score", rank_score := NA]
-leaderboard[,rank  := as.integer(sub(" .*", "", rank_score))]
-leaderboard[,score_pre := unlist(str_split(rank_scores, "[\\(\\)]"))[2], by=athlete_id]
-leaderboard[,scaled := as.integer(substring(rank_score, 
-                                            nchar(rank_score)-3,
-                                            nchar(rank_score)) == " - s")]
-
+t2-t1
 
