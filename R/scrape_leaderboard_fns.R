@@ -31,7 +31,7 @@ get_leaderboard_page <- function(params, page) {
            score      = convert_scores(score_pre),
            scaled_flg = if_else(year >= 15L, convert_scaled(scaled_pre), FALSE),
            retrieved_datetime = Sys.time()) %>%
-    select(- athlete_url, -rank_score, -ends_with("pre")) %>% View()
+    select(- athlete_url, -rank_score, -ends_with("pre"))
   
   leaderboard
 }
