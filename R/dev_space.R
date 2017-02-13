@@ -6,7 +6,6 @@ library(rvest)
 
 source("./R/scrape_leaderboard_fns.R")
 
-# # TEST Code
 # workout <- "15.1a"
 # division <- 1
 # scaled <- FALSE
