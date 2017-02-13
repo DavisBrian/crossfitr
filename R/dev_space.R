@@ -19,7 +19,7 @@ t1 <- Sys.time()
 for (o in open) {
   workout <- o
   for(division in 1:10) {
-    file_name <- paste0("./data/open", gsub("[\\.]", "_", o), "_div", div, "_scale0", ".rds")
+    file_name <- paste0("./data/open", gsub("[\\.]", "_", o), "_div", division, "_scale0", ".rds")
     leaderboard <- get_leaderboard(workout, division, scaled = FALSE)
     saveRDS(leaderboard, file = file_name)
   }
