@@ -33,12 +33,14 @@ for (o in open) {
   if (!dir.exists(out_dir)){
     dir.create(out_dir, recursive = TRUE)
   }
-  
+  t0 <- Sys.time()
   for(division in 1:10) {
     file_name <- paste0(out_dir, "/open", gsub("[\\.]", "_", o), "_div", division, "_scale0", ".rds")
     leaderboard <- get_leaderboard(workout, division, scaled = FALSE)
     saveRDS(leaderboard, file = file_name)
   }
+  t0b <-  Sys.time()
+  message(paste0(workout, " took ", t0b-t0, " sec to run\n"))
 }
 
 t2 <- Sys.time()
