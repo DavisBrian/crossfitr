@@ -21,7 +21,7 @@ open2014 <- paste0("14.", seq(1:5))
 open2013 <- paste0("13.", seq(1:5))
 open2012 <- paste0("12.", seq(1:5))
 
-open <- c(open2016, open2015, open2014, open2013, open2012)
+open <- c(open2015, open2014, open2013, open2012)
 
 
 t1 <- Sys.time()
@@ -34,7 +34,7 @@ for (o in open) {
     dir.create(out_dir, recursive = TRUE)
   }
   t0 <- Sys.time()
-  for(division in 1:10) {
+  for(division in 1:2) {
     file_name <- paste0(out_dir, "/open", gsub("[\\.]", "_", o), "_div", division, "_scale0", ".rds")
     leaderboard <- get_leaderboard(workout, division, scaled = FALSE)
     saveRDS(leaderboard, file = file_name)
