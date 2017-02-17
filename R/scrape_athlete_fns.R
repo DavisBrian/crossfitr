@@ -1,95 +1,173 @@
 # scrape_athlete_data
 library(purrr)
 
+# scrape functions
+source("./R/scrape_fns.R")
 
 create_athlete_url <- function(id) {
   paste0("https://games.crossfit.com/athlete/",id)
 }
 
-athlete_id <- 132552
-athlete_id <- 574825  # no rep
-athlete_id <- 692214  # missing basic stats
+DeUnitWeight <- function(x){
+  if(x %in% c("--","", NA)) {return(as.integer(NA))}
+  unit  <- substr(x,
+                  nchar(x)-1,
+                  nchar(x))
+  value <- as.numeric(substr(x,
+                             1, nchar(x)-3))
+  value <- switch(unit,
+                  kg = value * 2.20462,
+                  lb = value,
+                  NA)
+  return(value)
+}
 
-url <- create_athlete_url(athlete_id)
-profile_page <- read_page(url)
-
-athlete_name <- html_text(html_nodes(profile_page, ".c-heading-page-cover")) %>%
-  gsub("\\n", '', x=.)  %>% 
-  trimws() %>%
-  gsub("[ ]+", " ", x=.)
+DeUnitHeight <- function(x) {
+  if(x %in% c("--","", NA)) {return(as.numeric(NA))}
   
+  n.char <- nchar(x)
+  if(substr(x,2,2) == "'"){
+    feet <- as.numeric(substr(x,1,1))
+    inch <- as.numeric(substr(x,3,n.char-1))
+    return(feet*12 + inch)
+  } else if(substr(x, n.char-1, n.char) == "cm"){
+    cm <- substr(x, 1, n.char-3)
+    return(as.numeric(cm) * 0.393701)
+  } else {
+    return(NA)
+  }
+}
 
 # basic stats
 clean_up_text <- function(x) {
   trimws(gsub("\\n", '', x))
 }
 
-labels <-clean_up_text(html_text(html_nodes(profile_page, "ul.infobar .item-label")))
-text   <- clean_up_text(html_text(html_nodes(profile_page, "ul.infobar .text")))
 
+get_athlete_name <- function(page) {
+  athlete_name <- page %>%
+    html_nodes(".c-heading-page-cover") %>%
+    html_text() %>% 
+    clean_up_text() %>%
+    gsub("[ ]+", " ", x=.)
+  
+  athlete_name
+}
+
+get_basic_stats <- function(page) {
+  labels <- clean_up_text(html_text(html_nodes(page, "ul.infobar .item-label")))
+  text   <- clean_up_text(html_text(html_nodes(page, "ul.infobar .text")))
+  
+  if (length(labels) == length(text)) {
+    x <- data_frame(stat  = tolower(labels),
+                    value = text) %>%
+      spread(stat, value) %>%
+      mutate(age    = as.integer(age),
+             height = DeUnitHeight(height),
+             weight = DeUnitWeight(weight))
+  }
+  else {
+    stop("Basic Stats parsing error.")
+  } 
+  
+  x
+}
+
+MinSecToSec <- function(x){
+  if(x %in% c("--","","0:00",NA)) {
+    return(ms(NA, quiet = TRUE))
+  } else {
+    return(ms(x))
+  }
+}
+
+fix_benchmark_labels <- function(labels) {
+  # gsub("-", '', gsub(" ", "_", tolower(labels)))
+  labels %>%
+    tolower() %>%
+    gsub(" ", "_", .) %>%
+    gsub("-", '', .)
+}
+
+get_benchmark_labels <- function(page) {
+  labels <- clean_up_text(html_text(html_nodes(page, "table.stats th")))
+  
+  if (all(labels %in% "")) {
+    labels <- c("back_squat",
+                "clean_and_jerk",
+                "deadlift",
+                "fight_gone_bad",
+                "filthy_50",
+                "fran",
+                "grace",
+                "helen",
+                "max_pullups",
+                "run_5k",
+                "snatch",
+                "sprint_400m")
+  }
+  
+  return(labels)
+}
+
+get_benchmark_stats <- function(page) {
+  labels <- get_benchmark_labels(page)
+  text   <- clean_up_text(html_text(html_nodes(page, "table.stats td")))
+  
+  if (length(labels) != length(text)) {
+    stop("Basic Stats parsing error.")
+    
+  }
+  
+  x <- data_frame(stat  = fix_benchmark_labels(labels),
+                  value = text) %>%
+    spread(stat, value) %>%
+    mutate(back_squat     = DeUnitWeight(back_squat),
+           clean_and_jerk = DeUnitWeight(clean_and_jerk),
+           deadlift       = DeUnitWeight(deadlift),
+           fight_gone_bad = as.integer(fight_gone_bad),
+           filthy_50      = MinSecToSec(filthy_50),
+           fran           = MinSecToSec(fran),
+           grace          = MinSecToSec(grace),
+           helen          = MinSecToSec(helen),
+           max_pullups    = as.integer(max_pullups),
+           run_5k         = MinSecToSec(run_5k),
+           snatch         = DeUnitWeight(snatch),
+           sprint_400m    = MinSecToSec(sprint_400m))
+  x
+}
 
 get_athlete <- function(athlete_id){
   
   url <- create_athlete_url(athlete_id)
   profile_page <- read_page(url)
   
-  # if(html_text(html_nodes(profile_page, "h2#page-title")) == "Athlete: Not found"){
-  #   print(url)
-  #   stop("Special case 1 in get_athlete that needs to be handled.")
-  #   return(data.table("athlete_id" = athlete_id))
-  # }
-  # athlete not found.  Skip them
   if (is.null(profile_page)) {
     return(NULL)
   }
   
-  athlete_name <- html_text(html_nodes(profile_page, ".c-heading-page-cover"))
-  region <- html_text(html_nodes(profile_page, ".infobar-container ul"))
-  html_text(html_nodes(profile_page, ".sm-inline:nth-child(1) .text"))
-  html_text(html_nodes(profile_page, ".sm-inline"))
-  html_name(html_nodes(profile_page, ".sm-inline"))
-  # labels  <- html_text(html_nodes(profile_page, "div.profile-details dl dt"))
-  # demo    <- html_text(html_nodes(profile.page, "div.profile-details dl dd"))
-  # stats   <- html_text(html_nodes(profile_page, "div.profile-stats td"))
-  # history    <- html_nodes(profile.page, "div.history")
-  # 
-  # eat        <- c(html_text(html_nodes(history[[1]], "h4")),"")
-  # train      <- c(html_text(html_nodes(history[[2]], "h4")),"")
-  # background <- c(html_text(html_nodes(history[[3]], "h4")),"")
-  # experience <- c(html_text(html_nodes(history[[4]], "h4")),"")
-  # schedule   <- c(html_text(html_nodes(history[[5]], "h4")),"")
-  # howlong    <- c(html_text(html_nodes(history[[6]], "h4")),"")
+  basic_stats <- get_basic_stats(profile_page)
+  bench_stats <- get_benchmark_stats(profile_page)
   
   
-  athlete <- data.table(
-    "athlete_id" = athlete.id,
-    "name"       = substring(html_text(html_nodes(profile_page, "h2#page-title")),10),
-    "region"     = paste(demo[which(labels == "Region:")],"",sep=""),
-    "team"       = paste(demo[which(labels == "Team:")],"", sep=""),
-    "affiliate"  = paste(demo[which(labels == "Affiliate:")],"",sep=""),
-    "gender"     = paste(demo[which(labels == "Gender:")],"",sep=""),
-    "age"        = paste(demo[which(labels == "Age:")],"",sep=""),
-    "height"     = DeUnitHeight(paste(demo[which(labels == "Height:")],"",sep="")),
-    "weight"     = DeUnitWeight(paste(demo[which(labels == "Weight:")],"",sep="")),
-    "fran"       = MinSecToSec(stats[2]),
-    "helen"      = MinSecToSec(stats[4]),
-    "grace"      = MinSecToSec(stats[6]),
-    "filthy50"   = MinSecToSec(stats[8]),
-    "fgonebad"   = as.integer(stats[10]),
-    "run400"     = MinSecToSec(stats[12]),
-    "run5k"      = MinSecToSec(stats[14]),
-    "candj"      = DeUnitWeight(stats[16]),
-    "snatch"     = DeUnitWeight(stats[18]),
-    "deadlift"   = DeUnitWeight(stats[20]),
-    "backsq"     = DeUnitWeight(stats[22]),
-    "pullups"    = as.integer(stats[24]),
-    "eat"        = paste(eat, collapse="|"),
-    "train"      = paste(train, collapse="|"),
-    "background" = paste(background, collapse="|"),
-    "experience" = paste(experience, collapse="|"),
-    "schedule"   = paste(schedule, collapse="|"),
-    "howlong"    = paste(howlong, collapse="|"),
-    "retrieved_datetime" = Sys.time())
+  athlete <- data_frame(id           = athlete_id,
+                        athlete_name = get_athlete_name(profile_page)) %>%
+    cbind(basic_stats, bench_stats) %>%
+    mutate(retrieved_datetime = Sys.time())
   
   return(athlete)
 }
+
+
+athlete_id <- 132552
+athlete_id <- 574825  # no rep
+athlete_id <- 692214  # missing basic stats
+
+
+get_athlete(132552)
+get_athlete(574825)
+get_athlete(692214)
+
+x <- c(132552, 574825, 692214)
+
+bind_rows(lapply(x, get_athlete))
