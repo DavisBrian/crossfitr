@@ -1,3 +1,6 @@
+# Registration FAQ / Deadlines
+# https://games.crossfit.com/help/article/40
+
 # development
 library(tidyverse)
 library(lubridate)

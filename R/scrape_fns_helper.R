@@ -4,6 +4,10 @@ library(lubridate)
 library(stringr)
 library(rvest)
 
+# get text from a css string
+get_html_text <- function(page, string) {
+  html_text(html_nodes(page, string))
+}
 
 # Get the urls for the athlete pages -------------------------------------------
 get_athlete_urls <- function(html_page) {
@@ -104,36 +108,6 @@ get_stage <- function(workout) {
        stage     = stg)
 }
 
-get_gender <- function(division) {
-  coed_divs   <- c(11)
-  male_divs   <- c(1, 3, 5, 7, 9, 12, 14, 16)
-  female_divs <- c(2, 4, 6, 8, 10, 13, 15, 17)
-  case_when(
-    division %in% coed_divs   ~ "COED",
-    division %in% male_divs   ~ "M",    
-    division %in% female_divs ~ "F",
-    TRUE                      ~ as.character(NA)
-  )
-}
-
-# division
-#  1 = "Individual Men"
-#  2 = "Individual Women"
-#  3 = "Masters Men 45-49"
-#  4 = "Masters Women 45-49"
-#  5 = "Masters Men 50-54"
-#  6 = "Masters Women 50-54"
-#  7 = "Masters Men 55-59"
-#  8 = "Masters Women 55-59"
-#  9 = "Masters Men 60+"
-# 10 = "Masters Women 60+"
-# 11 = "Team"
-# 12 = "Masters Men 40-44"
-# 13 = "Masters Women 40-44"
-# 14 = "Teenage Boys 14-15"
-# 15 = "Teenage Girls 14-15"
-# 16 = "Teenage Boys 16-17"
-# 17 = "Teenage Girls 16-17"
 
 check_division <- function(division, year = NULL) {
   if (is.null(year)) {

@@ -112,13 +112,26 @@ get_benchmark_labels <- function(page) {
 
 get_benchmark_stats <- function(page) {
   labels <- get_benchmark_labels(page)
-  text   <- clean_up_text(html_text(html_nodes(page, "table.stats td")))
   
-  if (length(labels) != length(text)) {
-    stop("Basic Stats parsing error.")
+  #make sure we have a Benchmark Stats section
+  hdr <- get_html_text(page, "#profileStats+ .page-section .c-heading-data-sub")
+  if (length(hdr) == 0L) {
+    text <- rep(NA, length(labels))
+  } else if (length(hdr) > 1L) {
+    stop("Error parsing Benchmark Stats Header")
+  } else if (hdr == " Benchmark Stats ") {
+    # text   <- clean_up_text(html_text(html_nodes(page, "table.stats td")))
+    text <- clean_up_text(get_html_text(page, "table.stats td"))
     
+    if (length(labels) != length(text)) {
+      stop("Benchmark Stats parsing error. Length of labels and values do not match.")
+      
+    }
+    
+  } else {
+    stop("Error parsing Benchmark Stats.")
   }
-  
+
   x <- data_frame(stat  = fix_benchmark_labels(labels),
                   value = text) %>%
     spread(stat, value) %>%
@@ -158,16 +171,3 @@ get_athlete <- function(athlete_id){
   return(athlete)
 }
 
-
-athlete_id <- 132552
-athlete_id <- 574825  # no rep
-athlete_id <- 692214  # missing basic stats
-
-
-get_athlete(132552)
-get_athlete(574825)
-get_athlete(692214)
-
-x <- c(132552, 574825, 692214)
-
-bind_rows(lapply(x, get_athlete))
