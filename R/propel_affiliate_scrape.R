@@ -16,8 +16,7 @@ athlete_profiles <- roster$athlete_ids %>% get_athletes()
 # add in gender (from Division)
 athlete_profiles <- athlete_profiles %>% 
   left_join(., divisions, by = c("division" = "name")) %>% 
-  mutate(gender = get_gender(div_id)) %>%
-  select(id, athlete_name, age, division, gender)
+  mutate(gender = get_gender(div_id))
 
 # save off the data set so we don't have to scrape again
 out_dir <- "./data/Propel/"
