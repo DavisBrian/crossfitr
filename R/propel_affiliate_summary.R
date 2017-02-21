@@ -19,8 +19,24 @@ library(xtable)
 athletes <- readRDS(file = "./data/Propel/propel_athlete_profiles_2017.rds")
 
 # Fix a couple people who entered their height as inches
-# athletes 
-# athletes[athletes$id == 988041, "height"] <- 12*6
+ht_tbl <- athletes %>% 
+  filter(height < 12) %>% 
+  select(athlete_name, affiliate, division, height)
+
+set_names(ht_tbl, c("Name", "Affiliate", "Division", "Height"))
+print(xtable(ht_tbl, digits=0), type="html",html.table.attributes = "style='width:600px'", include.rownames=FALSE)
+
+
+# # print html tables
+# for(measure in athlete.summary[, unique(variable)]){
+#   message(measure)
+#   sub.table <- athlete.summary[variable == measure]
+#   sub.table[, variable:=NULL]
+#   setnames(sub.table, c("","# profiles", "Average","5th percentile","25th","50th","75th","95th"))
+#   print(xtable(sub.table, digits=0), type="html",html.table.attributes = "style='width:600px'", include.rownames=FALSE)
+# }
+
+
 
 # Add in "genderless" Division
 athletes <- athletes %>% 
@@ -84,15 +100,8 @@ ggsave(width=10, height=6,
        filename="Propel_height_plot.png")
 
 
-# print html tables
-for(measure in athlete.summary[, unique(variable)]){
-  message(measure)
-  sub.table <- athlete.summary[variable == measure]
-  sub.table[, variable:=NULL]
-  setnames(sub.table, c("","# profiles", "Average","5th percentile","25th","50th","75th","95th"))
-  print(xtable(sub.table, digits=0), type="html",html.table.attributes = "style='width:600px'", include.rownames=FALSE)
-}
-
 
 
 ## Counts of Benchmark Stats
+
+# Calculate the missing rates for each stat
