@@ -23,7 +23,7 @@ ht_tbl <- athletes %>%
   filter(height < 12) %>% 
   select(athlete_name, affiliate, division, height)
 
-set_names(ht_tbl, c("Name", "Affiliate", "Division", "Height"))
+purrr::set_names(ht_tbl, c("Name", "Affiliate", "Division", "Height")) 
 print(xtable(ht_tbl, digits=0), type="html",html.table.attributes = "style='width:600px'", include.rownames=FALSE)
 
 
@@ -50,6 +50,7 @@ athletes <- athletes %>%
                              labels = c("14-15", "16-17", "18-34", "35-39",
                                         "40-44", "45-49", "50-54", "55-59",
                                         "60+")))
+athletes %>% View()
 
 
 ## Summarize Age - Distribution  (Division) ------------------------------------
@@ -98,7 +99,6 @@ ht_plot <- ggplot(athletes, mapping = aes(x=height, fill = gender)) +
 ggsave(width=10, height=6,
        plot=ht_plot,
        filename="Propel_height_plot.png")
-
 
 
 
