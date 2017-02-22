@@ -26,7 +26,3 @@ if (!dir.exists(out_dir)){
 
 out_file <- "propel_athlete_profiles_2017.rds"
 saveRDS(athlete_profiles, file = paste0(out_dir, out_file))
-
-# Basic Descriptive stats
-
-
