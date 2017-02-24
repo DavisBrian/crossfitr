@@ -1,0 +1,32 @@
+---
+title: "Splashr notes"
+author: "Brian"
+date: "2/23/2017"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Install [Docker](https://www.docker.com/)
+
+# Open Docker and follow the instructions
+
+# Install devtools (if you don't already have it)
+
+library(devtools)
+# Install harbor package (not on cran)
+
+devtools::install_github("wch/harbor")
+
+library(harbor)
+devtools::install_github("hrbrmstr/splashr", force = TRUE) 
+
+# Test it out
+library(splashr)
+## this gets it up and running
+library(splashr)
+
+install_splash()  # this takes a few minutes
+splash_svr <- start_splash()
