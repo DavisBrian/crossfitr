@@ -25,6 +25,57 @@ https://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParal
 
 ## WOD
 
+## Plot Inspiration (http://www.r-graph-gallery.com/all-graphs/)
+
+weight - use dual axis (lbs & kgs)
+height - use dual axis (english / metric)
+dual axis - bar plots (counts and percentage)
+
+[Cheat Sheets](http://www.r-graph-gallery.com/portfolio/r-dataviz-cheatsheet/)
+[Theme Builder](http://www.showmeshiny.com/ggplot2-theme-builder/)
+[genral gallery list](http://stats.stackexchange.com/questions/78844/a-gallery-of-charts-diagrams-and-plot-types)
+
+
+
+[Ordered Box plot](http://www.r-graph-gallery.com/118-change-hover-mode-in-plotly/)
+
+[ggforce](https://cran.r-project.org/web/packages/ggforce/vignettes/Visual_Guide.html)
+
+    * facet_wrap_paginate
+    * contextual_zoom
+
+[ggalt](https://cran.r-project.org/web/packages/ggalt/vignettes/ggalt_examples.html)
+
+    * (better) Density plots
+    * (better) 2D Density plots  (age, height, weight)
+    * Encircle data points automatically
+    * Lollipop Charts
+    * Dumbbell charts
+    
+[ggstance](https://github.com/lionel-/ggstance)    
+
+    * easy way to flip axes of common plot
+    * great fro grouping
+
+[ggmisc](https://cran.r-project.org/web/packages/ggpmisc/vignettes/user-guide.html)
+    * good for auto labeling peaks/valleys of your data
+    
+[ggExtra](https://github.com/daattali/ggExtra)
+    * Adds marginal distributions to a scatter plot.
+
+[ggthemes](https://github.com/jrnold/ggthemes)
+    * Highcharts theme
+    * fivethirtyeight theme
+    * Maps theme
+
+[ggsci](https://cran.r-project.org/web/packages/ggsci/vignettes/ggsci.html)
+
+    * Scientific Journal based themes
+    
+[survminer](http://www.sthda.com/english/rpkgs/survminer/)
+
+    * Survival plots
+
 *  No Shows breakdown
 *  Score vs # of Athletes (% of Athletes)
 
