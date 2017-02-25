@@ -4,6 +4,8 @@ library(lubridate)
 library(stringr)
 library(rvest)
 
+
+
 # get text from a css string
 get_html_text <- function(page, string) {
   html_text(html_nodes(page, string))
@@ -31,6 +33,12 @@ get_athlete_ids <- function(athlete_urls) {
   }
   as.integer(sapply(athlete_urls, get_athlete_id))
 }
+
+get_page_count <- function(html_page) {
+  # as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[[1]]))
+  as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[1]))
+}
+
 
 get_rank_scores <- function(html_page, stage = 0) {
   rs <- html_table(html_page, fill=TRUE)[[1]]
@@ -135,7 +143,3 @@ check_division <- function(division, year = NULL) {
   invisible(NULL)
 }
 
-get_page_count <- function(html_page) {
-  # as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[[1]]))
-  as.integer(html_text(html_nodes(html_page, "div#leaderboard-pager a.button")[1]))
-}
