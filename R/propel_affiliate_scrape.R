@@ -26,3 +26,15 @@ if (!dir.exists(out_dir)){
 
 out_file <- "propel_athlete_profiles_2017.rds"
 saveRDS(athlete_profiles, file = paste0(out_dir, out_file))
+
+# Update the athlete profiles
+ap <- readRDS(paste0(out_dir, out_file))
+new_athletes <- setdiff(roster$athlete_ids, ap$id) %>%
+  get_athletes()
+
+athlete_profiles <- bind_rows(ap, new_athletes)
+
+out_file <- "propel_athlete_profiles_2017_complete.rds"
+saveRDS(athlete_profiles, file = paste0(out_dir, out_file))
+
+
