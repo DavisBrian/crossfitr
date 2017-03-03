@@ -1,0 +1,140 @@
+define(function () {
+
+  var ROOT = "";
+
+  return {
+    LEADERBOARD_URL: "/leaderboard",
+    LEADERBOARD_INFO_ENDPOINT: ROOT + "/competitions/api/v1/competitions/open/2017?expand[]=controls&expand[]=workouts",
+    ATHLETE_SEARCH_ENDPOINT: ROOT + "/competitions/api/v1/competitions/open/2017/athletes?",
+    RETRIEVE_LEADERBOARD_ENDPOINT: ROOT + "/competitions/api/v1/competitions/open/2017/leaderboards?",
+    GENERIC_ERROR_MESSAGE: "An error has occurred, please refresh the page and try again.",
+    MULTISELECT_CHILD_ID: "1",
+    PREVIEW_IMAGE_URL: "/assets/img/sites/games/backgrounds/leaderboard.jpg",
+    PAGE_SIZE: 50,
+    PERSONALIZED_PAGE_SIZE: 10,
+    SEARCH_DISPLAY_SUFFIX: "_display",
+    CONTROL: {
+      TYPE: {
+        MULTISELECT: "multiselect",
+        SELECT: "select",
+        SEARCH: "search"
+      },
+      NAME: {
+        COMPETITION: "competition",
+        YEAR: "year",
+        DIVISION: "division",
+        SORT: "sort",
+        WORKOUT_TYPE: "scaled",
+        FITTEST: "fittest",
+        OCCUPATION: "occupation",
+        ATHLETE_SEARCH: "athlete"
+      },
+      VALUE: {
+        COMPETITION: {
+          OPEN: "1",
+          REGIONAL: "2",
+          GAMES: "3"
+        },
+        OCCUPATION: {
+          ALL: "0"
+        },
+        FITTEST: {
+          REGION: "1",
+          REGION_CHILD: {
+            WORLDWIDE: 0,
+            AFRICA: 1,
+            ASIA: 2,
+            AUSTRALIA: 3,
+            CANADA_EAST: 4,
+            CANADA_WEST: 5,
+            CENTRAL_EAST: 6,
+            EUROPE: 7,
+            LATIN_AMERICA: 8,
+            MID_ATLANTIC: 9,
+            NORTH_CENTRAL: 10,
+            NORTH_EAST: 11,
+            NORTHERN_CALIFORNIA: 12,
+            NORTH_WEST: 13,
+            SOUTH_CENTRAL: 14,
+            SOUTH_EAST: 15,
+            SOUTHERN_CALIFORNIA: 16,
+            SOUTH_WEST: 17
+          }
+        },
+        YEAR: {
+          "2017": "2017"
+        },
+        DIVISION: {
+          DEFAULT: "2",
+          TEAM: "11",
+          INDIVIDUAL_MEN: "1",
+          INDIVIDUAL_WOMEN: "2",
+          TEEN_GIRLS_14_15: "15",
+          TEEN_GIRLS_16_17: "17",
+          TEEN_BOYS_14_15: "14",
+          TEEN_BOYS_16_17: "16",
+          MASTERS_WOMEN_35_39: "19",
+          MASTERS_WOMEN_40_44: "13",
+          MASTERS_WOMEN_45_49: "4",
+          MASTERS_WOMEN_50_54: "6",
+          MASTERS_WOMEN_55_59: "8",
+          MASTERS_WOMEN_60_PLUS: "10",
+          MASTERS_MEN_35_39: "18",
+          MASTERS_MEN_40_44: "12",
+          MASTERS_MEN_45_49: "3",
+          MASTERS_MEN_50_54: "5",
+          MASTERS_MEN_55_59: "7",
+          MASTERS_MEN_60_PLUS: "9"
+        },
+        SORT: {
+          OVERALL: 0
+        },
+        WORKOUT_TYPE: {
+          RXD: 0
+        }
+      }
+    },
+    COMPETITION_REDIRECT_URLS: {
+      // open
+      "1": {
+        "2017": null, // null means no redirect
+        "2016": createRedirectUrl("2016", "1"),
+        "2015": createRedirectUrl("2015", "1"),
+        "2014": createRedirectUrl("2014", "1"),
+        "2013": createRedirectUrl("2013", "1"),
+        "2012": createRedirectUrl("2012", "1"),
+        "2011": createRedirectUrl("2011", "1")
+      },
+      // regional
+      "2": {
+        "2017": createRedirectUrl("2017", "2"),
+        "2016": createRedirectUrl("2016", "2"),
+        "2015": createRedirectUrl("2015", "2"),
+        "2014": createRedirectUrl("2014", "2"),
+        "2013": createRedirectUrl("2013", "2"),
+        "2012": createRedirectUrl("2012", "2"),
+        "2011": createRedirectUrl("2011", "2")
+      },
+      // games
+      "3": {
+        "2017": createRedirectUrl("2017", "3"),
+        "2016": createRedirectUrl("2016", "3"),
+        "2015": createRedirectUrl("2015", "3"),
+        "2014": createRedirectUrl("2014", "3"),
+        "2013": createRedirectUrl("2013", "3"),
+        "2012": createRedirectUrl("2012", "3"),
+        "2011": createRedirectUrl("2011", "3")
+      }
+    }
+  };
+
+  // HELPERS
+
+  function createRedirectUrl (year, competition) {
+    var qs = [];
+    if (year) qs.push("year=" + year);
+    if (competition) qs.push("competition=" + competition);
+    return "/legacy-leaderboard?" + qs.join("&");
+  }
+
+});

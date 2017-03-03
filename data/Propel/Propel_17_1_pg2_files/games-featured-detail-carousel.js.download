@@ -1,0 +1,40 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    makeCarousel($('#articleDetail .athletes-featured'), 4, 4);
+    makeCarousel($('.recommended-featured'), 3, 3);
+
+    function makeCarousel($element, slidesDesktop, scrollDesktop) {
+      $element.show();
+      var $carousel = $element.find('.carousel');
+
+      $carousel.find('>ul').slick({
+        slidesToShow: slidesDesktop,
+        slidesToScroll: scrollDesktop,
+        prevArrow: $carousel.find('.arrow-left'),
+        nextArrow: $carousel.find('.arrow-right'),
+        responsive: [
+          {
+            breakpoint: 993,
+            settings: {
+              slidesToShow: 2,
+              slidesToScroll: 2,
+              prevArrow: $carousel.find('.arrow-left'),
+              nextArrow: $carousel.find('.arrow-right')
+            }
+          },
+          {
+            breakpoint: 500,
+            settings: {
+              slidesToShow: 1,
+              slidesToScroll: 1,
+              prevArrow: $carousel.find('.arrow-left'),
+              nextArrow: $carousel.find('.arrow-right')
+            }
+          }
+        ]
+      });
+    }
+
+  });

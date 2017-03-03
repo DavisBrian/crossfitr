@@ -1,0 +1,17 @@
+define([
+  "jquery",
+  "jquery.scrollTo"
+  ], function($) {
+    $('[data-scrollto]').click(function(e) {
+      // Prevent the jump and the #hash from appearing on the address bar
+      e.preventDefault();
+      // Scroll the window, stop any previous animation, stop on user manual scroll
+      // Check https://github.com/flesler/jquery.scrollTo for more customizability
+      var headerHeight = $('#globalMenu').height() + $('#gamesMenu').height();
+      $(window).stop(true).scrollTo(this.hash, {
+        offset: -1 * headerHeight,
+        duration: 1000,
+        interrupt: true
+      });
+    });
+  });

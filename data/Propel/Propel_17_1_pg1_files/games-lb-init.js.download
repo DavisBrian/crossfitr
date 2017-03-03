@@ -1,0 +1,58 @@
+define(["dynamic-component"], function (dc) {
+
+  // CONSTANTS
+
+  var MAX_MOBILE_WIDTH = 768;
+
+  // EXPORTS
+  
+  return function init () {
+
+    return dc.createState({
+
+      // global 
+      loadingCount: 0,
+      initialized: false,
+      globalError: "",
+      persistQueryString: true,
+      showingHighlightedAthlete: false,
+      perPage: null, // used in querystring for retrieving athletes
+      window: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+
+      // meta
+      meta: {},
+
+      // controls
+      controls: {
+        visible: false,
+        list: []
+      },
+
+      // workouts for table header
+      workouts: [],
+
+      // athletes (table)
+      athletes: [],
+
+      // footer (e.g. page numbers)
+      footer: {
+        currentPage: 1
+      },
+
+      // helpers
+      isLoading: function () {
+        return this.loadingCount > 0;
+      },
+
+      isMobile: function () {
+        return this.window.width <= MAX_MOBILE_WIDTH;
+      }
+
+    });
+
+  };
+
+});

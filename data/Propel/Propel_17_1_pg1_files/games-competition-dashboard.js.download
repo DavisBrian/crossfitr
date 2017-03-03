@@ -1,0 +1,28 @@
+define([
+  "jquery"
+], function($) {
+  //Force bootstrap dropdown to stay open
+  var $dashboard = $('.competition-dashboard');
+
+  $dashboard.find('.dashboard-attribute-value').on({
+    'shown.bs.dropdown': function() { this.closable = false;  },
+    'hide.bs.dropdown':  function() { return this.closable;  }
+  });
+
+  $dashboard.find('.dropdown-menu').mouseleave(function(e) {
+    $(this).parent().removeClass("open");
+  });
+
+  $dashboard.find('.dropdown-menu .radio-label').click(function(e) {
+    e.preventDefault();
+    var parentMenu = $(this).parent().parent();
+    var radioInputId = $(this).attr('for');
+    parentMenu.find('input').attr('checked', false);
+    $('#' + radioInputId)[0].checked = true;
+  });
+
+  $dashboard.find('.cancel-edit').click(function(e) {
+    e.preventDefault();
+    $(this).closest('.dashboard-attribute-value').removeClass('open');
+  });
+});

@@ -1,0 +1,64 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    var $container = $('.js-carousel-partners-container');
+    $container.show();
+
+    var $carousel = $container.find('.js-carousel')
+
+    $carousel.slick({
+      slidesToShow: 3,
+      slidesToScroll: 3,
+      arrows: false,
+      autoplay: true,
+      autoplaySpeed: 3000,
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 3,
+            slidesToScroll: 3
+          }
+        },
+        {
+          breakpoint: 500,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            initialSlide: 1
+          }
+        }
+      ]
+    });
+
+    var $sponsorsContainer = $('.js-carousel-sponsors-container');
+    $sponsorsContainer.show();
+
+    var $sponsorsCarousel = $sponsorsContainer.find('.js-carousel')
+
+    $sponsorsCarousel.slick({
+      slidesToShow: 5,
+      slidesToScroll: 5,
+      arrows: false,
+      autoplay: true,
+      autoplaySpeed: 3000,
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 3,
+            slidesToScroll: 3
+          }
+        },
+        {
+          breakpoint: 500,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1
+          }
+        }
+      ]
+    });
+  });
+

@@ -1,0 +1,53 @@
+require([ "jquery", "mustache", "jquery-visible", "underscore", 'jquery.querystring'  ], function($, mustache, visible, _) {
+  var pageNumber = 2,
+      pathname = window.location.pathname,
+      overviewPages = [ "/articles", "/videos", "/photos", "/video/update-show"],
+      triggerInfiniteScroll = $.inArray(pathname, overviewPages) > -1;
+
+  //Special case for update show
+  if (pathname == "/video/update-show") {
+    var partialPathname = "/videos/video-wall-entry.mustache";
+    var requestPath = "/video/update-show"
+  } else {
+    var partialPathname = pathname+pathname.substring(0, pathname.length-1)+"-wall-entry.mustache";
+    var requestPath = pathname;
+  }
+
+  function bindScroll(){
+    if($(window).scrollTop() + $(window).height() >= $(document).height() - 300 && triggerInfiniteScroll) {
+      $('.ajax-loader').show();
+      //Avoid conflict with main menu scroll handler
+      $(window).off('scroll', $._data(window, 'events').scroll[1].handler);
+
+      loadData(pageNumber++);
+    }
+  }
+
+  function loadData(pageNumber){
+    var qs = _.extend($.currentQueryString(), { page: pageNumber });
+    $.ajax({
+      url: requestPath + '?' + $.param(qs),
+      type: "GET",
+      dataType: "json",
+      success: function (data) {
+        if(!$.isEmptyObject(data)){
+          $.get("/views/partials" + partialPathname, function(template) {
+            mustache.parse(template);
+            var output = mustache.render(template, data);
+            $(".article-wall .js-remaining-media-items").append(output);
+          });
+        }
+      }
+    })
+    .done(function(data){
+      if(!$.isEmptyObject(data)){
+        $(window).bind('scroll', bindScroll);
+      }
+      else{
+        $('.ajax-loader').hide();
+      }
+    });
+  }
+
+  $(window).scroll(bindScroll);
+});

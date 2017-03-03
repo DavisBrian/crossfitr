@@ -1,0 +1,29 @@
+define([
+  "jquery"
+  ], function($) {
+    var $container = $('#workouts');
+    var $division = $container.find('select[name=division]');
+    var $workoutType = $container.find('select[name=workout_type]');
+
+    $division.change(function() {
+      window.location = window.location.pathname + '?division=' + $division.val();
+    });
+
+    $workoutType.change(function() {
+      window.location = window.location.pathname + '?division=' + $division.val() + '&workout_type=' + $workoutType.val();
+    });
+
+    //Allow direct linking to bootstrap tabs by hash
+    var url = document.location.toString();
+    if (url.match('#')) {
+      $container.find('.tabs .active').removeClass('active');
+      $container.find('.tabs a[href="#' + url.split('#')[1] + '"]').parent().addClass('active');
+      $container.find('.tabs-content .active').removeClass('active');
+      $container.find('.tabs-content li#' + url.split('#')[1]).addClass('active');
+    } 
+    
+   $container.find('.tabs a').on('shown.bs.tab', function (e) {
+     window.location.hash = e.target.hash;
+   })
+  });
+

@@ -1,0 +1,648 @@
+define([
+  "games-lb-config",
+  "dynamic-component",
+  "underscore",
+  "games-lb-helpers"
+], function (config, dc, _, helpers) {
+
+  // GLOBAL SCOPE
+
+  var h = dc.h;
+
+  // EXPORTS
+
+  function Render (update, state) {
+    var isMobile = state.isMobile();
+    var classes = ".inner";
+    classes += (state.isLoading() ? ".loading" : "");
+    classes += (!state.initialized ? ".loading-initial" : "");
+    classes += (state.globalError ? ".global-error" : "");
+    classes += (isMobile ? ".mobile" : ".desktop");
+    return h("div" + classes, [
+      h("h1", ["Leaderboard"]),
+      renderGlobalError(state.globalError),
+      isMobile ? renderMobileControls(update, state.controls) : renderDesktopControls(update, state.controls),
+      isMobile ? renderMobileAthletes(update, state.workouts, state.athletes) : renderDesktopAthletes(update, state.workouts, state.athletes, undefined, state.controls.list),
+      isMobile ? renderMobileFooter(update, state.footer) : renderDesktopFooter(update, state.footer)
+    ]);
+  };
+
+  Render.renderDesktopAthletes = renderDesktopAthletes;
+  Render.renderMobileAthletes = renderMobileAthletes;
+  Render.renderGlobalError = renderGlobalError;
+  Render.renderMobileControls = renderMobileControls;
+  Render.renderDesktopFooterPages = renderDesktopFooterPages;
+  Render.renderMobileFooterPages = renderMobileFooterPages;
+
+  return Render;
+
+  // ERROR HELPERS
+
+  function renderGlobalError (message) {
+    return h("div.global-error-message", [
+      message || ""
+    ]);
+  }
+
+  // CONTROLS HELPERS
+
+  // note that the last child in the controls wrapper element is a loading spinner
+  function renderMobileControls (update, state) {
+    if (_.isEmpty(state.list)) {
+      return h("div.mobile.controls.empty", [
+        h("div.loader")
+      ]);
+    } else {
+      var dynamicControls = [];
+      var competitionControl;
+      state.list.forEach(function (c, i) {
+        if (c.name === config.CONTROL.NAME.COMPETITION) {
+          competitionControl = renderSelectControl(update, c, i);
+        } else if (c.type === config.CONTROL.TYPE.SELECT) {
+          dynamicControls.push(renderSelectControl(update, c, i));
+        } else if (c.type === config.CONTROL.TYPE.MULTISELECT) {
+          dynamicControls.push(renderMultiSelectControl(update, c, i));
+        } else if (c.type === config.CONTROL.TYPE.SEARCH) {
+          dynamicControls.push(renderSearchControl(update, c, i, helpers.getSelectedDivision(state.list)));
+        } else {
+          dynamicControls.push(renderInvalidControl());
+        }
+      });
+      return h("div.mobile.controls", [
+        h("div.header", [
+          competitionControl,
+          h("button.btn.btn-white-outline", {
+            "ev-click": function () {
+              update("toggleFilterVisibility");
+            }
+          }, [ state.visible ? "Close" : "Filters" ])
+        ]),
+        h("div.filters" + (state.visible ? "" : ".hidden"), {
+          visibilityClass: new helpers.TransitionEndClassHook(state.visible ? "expanded" : "collapsed")
+        }, dynamicControls)
+      ]);
+    }
+  }
+
+  function renderDesktopControls (update, state) {
+    if (_.isEmpty(state.list)) {
+      return h("div.desktop.controls.empty", [
+        h("div.loader")
+      ]);
+    } else {
+      var dynamicControls = state.list.map(function (c, i) {
+        if (c.type === config.CONTROL.TYPE.SELECT) {
+          return renderSelectControl(update, c, i);
+        } else if (c.type === config.CONTROL.TYPE.MULTISELECT) {
+          return renderMultiSelectControl(update, c, i);
+        } else if (c.type === config.CONTROL.TYPE.SEARCH) {
+          return renderSearchControl(update, c, i, helpers.getSelectedDivision(state.list));
+        } else {
+          return renderInvalidControl();
+        }
+      });
+      dynamicControls.push(h("div.loader"));
+      return h("div.desktop.controls", dynamicControls);
+    }
+  }
+
+  function renderSelectControl (update, state, controlIndex) {
+    var selection = getSelectedOption(state.data, state.selectedValue);
+    var selectionDisplay = selection ? selection.display : "";
+    return h("div.control.select", {
+      attributes: {
+        "data-name": state.name
+      }
+    }, [
+      renderLabelElement(state.name, state.label),
+      h("div.input.select-wrapper", [
+        selectionDisplay,
+        renderSelectElement(state.name, state.data, state.selectedValue, selectChangeHandler(update, controlIndex))
+      ])
+    ]);
+  }
+
+  function renderMultiSelectControl (update, state, controlIndex) {
+    var selection = getSelectedOption(state.data, state.selectedValue);
+    selection = selection || state.data[0];
+    var selectionDisplay = selection ? selection.display : "";
+    var childSelection = getSelectedOption(selection.selects, selection.selectedValue);
+    var childSelectionDisplay = childSelection ? childSelection.display : "";
+    return h("div.control.multiselect", {
+      attributes: {
+        "data-name": state.name
+      }
+    }, [
+      // the input fields in multiselects
+      h("div.group", [
+        renderLabelElement(state.name, state.label),
+        h("div.input.select-wrapper", [
+          selectionDisplay,
+          renderSelectElement(state.name, state.data, state.selectedValue, selectChangeHandler(update, controlIndex))
+        ])
+      ]),
+      h("div.group", [
+        renderLabelElement(selection.name, ""),
+        h("div.input.select-wrapper", [
+          childSelectionDisplay,
+          renderSelectElement(selection.name, selection.selects, selection.selectedValue, multiselectChildChangeHandler(update, controlIndex))
+        ])
+      ]),
+    ]);
+  }
+
+  function renderSearchControl(update, state, controlIndex, division) {
+    return h("div.control.search", {
+        attributes: {
+          "data-name": state.name
+        }
+      }, [
+      renderLabelElement(state.name, state.label),
+      h("div.input", [
+        new helpers.SearchWidget({
+          name: state.name,
+          display: state.selectedValue.display,
+          placeholder: state.placeholder,
+          division: division,
+          selectHandler: searchSelectHandler(update, controlIndex),
+          changeHandler: searchChangeHandler(update, controlIndex),
+          startLoadingHandler: update.bind({}, "startLoading"),
+          stopLoadingHandler: update.bind({}, "stopLoading")
+        })
+      ])
+    ]);
+  }
+
+  function renderInvalidControl () {
+    return h("div.control.invalid", [
+      "Invalid Control"
+    ]);
+  }
+
+
+  function renderLabelElement (name, label) {
+    return h("label", {
+      attributes: {
+        for: "control-" + name
+      }
+    }, [
+      label
+    ]);
+  }
+
+  function renderSelectElement (name, options, selectedValue, onChange) {
+    return h("select#control-" + name, {
+      attributes: {
+        name: name
+      },
+      "ev-change": _.isFunction(onChange) ? onChange : undefined
+    }, options.map(function (o) {
+      return renderOptionElement(o.value, o.display, o.value == selectedValue);
+    }))
+
+  }
+
+  function renderOptionElement (value, display, selected) {
+    return h("option", {
+      attributes: {
+        value: value
+      },
+      selected: selected
+    }, [
+      display
+    ]);
+  }
+
+  function getSelectedOption (options, value) {
+    return _.find(options, function (o) {
+      return o.value == value;
+    });
+  }
+
+  function selectChangeHandler (update, controlIndex) {
+    return function onChange (event) {
+      update("setControlSelectedValue", {
+        controlIndex: controlIndex,
+        selectedValue: event.target.value
+      });
+    };
+  }
+
+  function multiselectChildChangeHandler (update, controlIndex) {
+    return function onChange (event) {
+      update("setMultiselectChildSelectedValue", {
+        controlIndex: controlIndex,
+        selectedValue: event.target.value
+      });
+    };
+  }
+
+  function searchSelectHandler (update, controlIndex) {
+    return function (event, selection) {
+      update("setControlSelectedValue", {
+        controlIndex: controlIndex,
+        selectedValue: {
+          display: selection.name,
+          value: selection.id
+        }
+      });
+    };
+  }
+
+  function searchChangeHandler (update, controlIndex) {
+    return function (event) {
+      update("setControlSelectedValue", {
+        controlIndex: controlIndex,
+        selectedValue: function (control) {
+          if (control.selectedValue.display === event.target.value) return control.selectedValue;
+          return {
+            display: event.target.value,
+            value: null
+          };
+        }
+      });
+    }
+  }
+
+  // ATHLETES HELPERS
+
+  function renderDesktopAthletes (update, workouts, athletes, onClickRow, controls) {
+    var division = helpers.getSelectedDivision(controls);
+    var competition = helpers.getControlSelectedValue(controls, config.CONTROL.NAME.COMPETITION);
+    var year = helpers.getControlSelectedValue(controls, config.CONTROL.NAME.YEAR);
+    return h("table.desktop.athletes", [
+      renderTableHeader(update, workouts, competition, year, division),
+      renderTableBody(update, workouts, athletes, onClickRow)
+    ]);
+  }
+
+  function renderMobileAthletes (update, workouts, athletes) {
+    // create list of views to pad the "info" element
+    var emptyInfoItems = [];
+    for (var i = 0; i < workouts.length - 3; i++) {
+      emptyInfoItems.push(h("li"));
+    }
+
+    // return view
+    return h("div.mobile.athletes", athletes.map(function (a, i) {
+      //scope
+      var classes = a.expanded ? ".expanded" : ".collapsed";
+      classes += a.alternateView ? ".alternate" : "";
+      classes += a.highlight ? ".highlighted" : "";
+      classes += (a.hasBottomBorder ? ".bottom-border" : "");
+
+      // mobile athlete view
+      return h("div.athlete" + classes, {
+        scroll: a.highlight && a.firstHighlight ? new helpers.AthleteScrollHook(a.timestamp) : undefined,
+      }, [
+        h("h3", {
+          "ev-click": function () {
+            update("toggleAthleteExpansion", {
+              index: i
+            });
+          }
+        }, [ a.overallrank + " (" + a.overallscore + ") " + a.name ]),
+        h("div.details", [
+          h("ul.scores", workouts.map(function (w, ii) {
+            var score = a.scores[ii];
+            return h("li", [
+              w.display + ": " + (score.exists ? score.workoutrank + "(" + (score.scoredisplay || "--") + ")" : "--"),
+              score.video == 1 ? renderScoreVideoIcon(score.scoreidentifier) : undefined
+            ]);
+          })),
+          h("div.profile", {
+            "ev-click": function (event) {
+              if (event.target.tagName !== "A") {
+                update("toggleAthleteAlternateView", {
+                  index: i
+                });
+              }
+            }
+          }, [
+            h("img", {
+              attributes: {
+                src: a.profilepic
+              }
+            }),
+            h("a.profile-link", {
+              attributes: {
+                href: helpers.getAthleteProfileLink(a.userid, a.division)
+              }
+            }, [
+              "View Profile"
+            ])
+          ]),
+          h("ul.info", [
+            h("li", [ "Region: " + (a.region || "--") ]),
+            h("li", [ "Affiliate: " + (a.affiliate || "--") ]),
+            h("li", [ "Team: " + (a.team || "--") ])
+          ].concat(emptyInfoItems))
+        ])
+      ]);
+    }));
+  }
+
+  function renderTableHeader (update, workouts, competition, year, division) {
+    return h("thead", [
+      h("tr", [
+        h("th.pos", [
+          "POS"
+        ]),
+        h("th.name", [
+          "NAME"
+        ]),
+        h("th.total-points", [
+          "Ttl PTS"
+        ])
+      ].concat(workouts.map(function (w) {
+        return renderWorkoutHead(update, w.sequence, w.display, helpers.getWorkoutURL(competition, year, w.display, division));
+      })))
+    ]);
+  }
+
+  function renderWorkoutHead (update, number, display, href) {
+    return h("th", {
+      attributes: {
+        "data-workout": number
+      }
+    }, [
+      h("a", {
+        attributes: {
+          href: href
+        }
+      },
+      [
+        display 
+      ])
+    ]);
+  }
+
+  function renderTableBody (update, workouts, athletes, onClickRow) {
+    return h("tbody", athletes.map(function (a, i) {
+      return renderAthleteRow(update, a, i, onClickRow);
+    }));
+  }
+
+  function renderAthleteRow (update, athlete, athleteIndex, onClick) {
+    var classes = athlete.expanded ? ".expanded" : ".collapsed";
+    classes += (athlete.highlight ? ".highlighted" : "");
+    classes += (athlete.hasBottomBorder ? ".bottom-border" : "");
+    return h("tr" + classes, {
+      scroll: athlete.highlight && athlete.firstHighlight ? new helpers.AthleteScrollHook(athlete.timestamp) : undefined,
+      "ev-click": function (event) {
+        if (_.isFunction(onClick)) {
+          onClick(event, athlete, athleteIndex); 
+        } else if (event.target.tagName !== "A") {
+          update("toggleAthleteExpansion", {
+            index: athleteIndex
+          });
+        }
+      }
+    }, [
+      h("td.pos", [athlete.overallrank]),
+      renderAthleteNameCell(athlete),
+      h("td.total-points", [athlete.overallscore])
+    ].concat(athlete.scores.map(function (s) {
+      return renderAthleteScore(s);
+    })));
+  }
+
+  function renderAthleteNameCell (athlete) {
+    return h("td.name", [
+      h("div", [
+        h("div.top", [
+          h("div.expand"),
+          h("div.full-name", [athlete.name])
+        ]),
+        h("div.middle.collapsed-hide", [
+          h("img", {
+            attributes: {
+              src: athlete.profilepic
+            },
+          }),
+          h("ul.info", [
+            athlete.region ? h("li", [athlete.region]) : undefined,
+            athlete.age ? h("li", [athlete.age]) : undefined,
+            athlete.height ? h("li", [athlete.height]) : undefined,
+            athlete.weight ? h("li", [athlete.weight]) : undefined
+          ])
+        ]),
+        h("div.bottom.collapsed-hide", [
+          h("a.profile-link", {
+            attributes: {
+              href: helpers.getAthleteProfileLink(athlete.userid, athlete.division)
+            }
+          }, [
+            "View Profile"
+          ])
+        ])
+      ])
+    ]);
+  }
+
+  function renderAthleteScore (score) {
+    if (score.exists) {
+      return h("td.score", [
+        h("div.rank-result", [
+          score.workoutrank + "(" + (score.scoredisplay || "--") + ")",
+          score.video == 1 ? renderScoreVideoIcon(score.scoreidentifier) : undefined
+        ]),
+        renderScoreDetails(score.scoredetails)
+      ]);
+    } else {
+      return h("td.score.empty", ["--"]);
+    }
+  }
+
+  function renderScoreDetails (details) {
+    details = details || {};
+    var children = [];
+    if (details.breakdown) {
+      children = details.breakdown
+                        .split("\n")
+                        .reduce(function (acc, item, index, array) {
+                          acc.push(item);
+                          if (index < array.length - 1)
+                            acc.push(h("br"));
+                          return acc;
+                        }, []);
+    }
+    if (details.time) {
+      var time = parseInt(details.time);
+      var hours = Math.floor(time / 60);
+      var minutes = time % 60;
+      if (children.length) children.push(h("br"));
+      children.push("(" + hours + ":" + minutes + ")");
+    }
+    return h("div.details.collapsed-hide", children);
+  }
+
+  function renderScoreVideoIcon (scoreId) {
+    return h("a.video", {
+      href: helpers.createScoreVideoURL(scoreId)
+    }, [
+      h("span.video-icon")
+    ]);
+  }
+
+  // FOOTER HELPERS
+
+  function renderDesktopFooter (update, state) {
+    var validFooter = state.currentPage > 0 && state.totalPages > 0;
+    var content = function () {
+      return [
+        h("div.expand", [
+          h("a", {
+            "ev-click": function () {
+              update("toggleAllAthleteExpansions");
+              helpers.scrollToTop();
+            }
+          }, [
+              state.allExpanded ? "\u2013 Collapse All" : "+ Expand All"
+          ])
+        ]),
+        renderDesktopFooterPages(update, state)
+      ];
+    }
+    return h("div.desktop.footer", validFooter ? content() : []);
+  }
+
+  function renderMobileFooter (update, state) {
+    var validFooter = state.currentPage > 0 && state.totalPages > 0;
+    return h("div.mobile.footer", [
+      validFooter ? renderMobileFooterPages(update, state) : undefined
+    ]);
+  }
+
+  function renderMobileFooterPages (update, state) {
+
+    // scope
+    var cp = state.currentPage;
+    var tp = state.totalPages;
+    var noPrev = cp == 1;
+    var noNext = cp == tp;
+
+    // view
+    return h("div.pages", [
+      h("button.btn.btn-outline.first", {
+        "ev-click": goToPageHandler(update, 1),
+        attributes: {
+          disabled: noPrev ? true : undefined
+        }
+      }, [ "<<" ]),
+      h("button.btn.btn-outline.prev", {
+        "ev-click": goToPageHandler(update, cp - 1),
+        attributes: {
+          disabled: noPrev ? true : undefined
+        }
+      }, [ "Previous" ]),
+      h("div.nums", [ cp + " of " + tp ]),
+      h("button.btn.next", {
+        "ev-click": goToPageHandler(update, cp + 1),
+        attributes: {
+          disabled: noNext ? true : undefined
+        }
+      }, [ "Next" ]),
+      h("button.btn.last", {
+        "ev-click": goToPageHandler(update, tp),
+        attributes: {
+          disabled: noNext ? true : undefined
+        }
+      }, [ ">>" ])
+    ]);
+  }
+
+  function renderDesktopFooterPages (update, state) {
+
+    // scope
+    var cp = state.currentPage;
+    var tp = state.totalPages;
+    var pages = [];
+
+    var ellipsis = function () {
+      return {
+        notLink: true,
+        display: "..."
+      };
+    };
+
+    var addIterablePageNum = function (pages, i) {
+      pages.push({
+        number: i,
+        display: "" + i,
+        active: i === cp
+      });
+    };
+
+    // build first section of pages
+    if (cp <= 4 && tp >=4) {
+      for (var i = 1; i <= 4; i++) {
+        addIterablePageNum(pages, i);
+      }
+    } else if (cp <= 4 && tp <= 4) {
+      for (var i = 1; i <= tp; i++) {
+        addIterablePageNum(pages, i);
+      }
+    } else {
+      addIterablePageNum(pages, 1);
+    }
+
+    // build middle section of pages
+    if (cp > 4 && cp <= (tp - 4)) {
+      pages.push(ellipsis());
+      for (var i = cp - 2; i <= (cp + 2); i++) {
+        addIterablePageNum(pages, i);
+      }
+    }
+
+    // build the final section of pages
+    if (cp > 4 && cp > (tp - 4)) {
+      pages.push(ellipsis());
+      for (var i = tp - 3; i <= tp; i++) {
+        addIterablePageNum(pages, i);
+      }
+    } else if (cp >= 4) {
+      pages.push(ellipsis());
+      addIterablePageNum(pages, tp);
+    } else if (cp > 4 && cp === tp - 1 || (cp <= 4 && tp == 5)) {
+      addIterablePageNum(pages, tp);
+    } else if (cp < 4 && tp > 5) {
+      pages.push(ellipsis());
+      addIterablePageNum(pages, tp);
+    }
+
+
+    var prevButton = h("button.btn.btn-outline.prev", {
+     "ev-click": goToPageHandler(update, cp - 1)
+    }, ["Previous"]);
+
+    var nextButton = h("button.btn.next", {
+     "ev-click": goToPageHandler(update, cp + 1)
+    }, ["Next"]);
+
+    //return vdom
+    return h("div.pages", [
+      ((cp !== 1 && tp > 1) ? prevButton : ''),
+      h("div.nums", pages.map(function (p) {
+        if (p.notLink) {
+          return h("span", [p.display]);
+        } else {
+          var activeClass = p.active ? ".active" : "";
+          return h("a." + activeClass, {
+            "ev-click": goToPageHandler(update, p.number)
+          }, [p.display]);
+        }
+      })),
+      ((cp !== tp) ? nextButton : '')
+    ]);
+  }
+
+  function goToPageHandler (update, pageNumber) {
+    return function () {
+      update("goToPage", {
+        pageNumber: pageNumber
+      });
+    }
+  }
+
+});

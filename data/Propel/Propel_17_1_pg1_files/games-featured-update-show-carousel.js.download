@@ -1,0 +1,36 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    $('.update-show-featured').show();
+
+    var $carouselUpdateShow = $('.update-show-featured .carousel')
+
+    $carouselUpdateShow.find('.js-carousel').slick({
+      slidesToShow: 3,
+      slidesToScroll: 3,
+      prevArrow: $carouselUpdateShow.find('.arrow-left'),
+      nextArrow: $carouselUpdateShow.find('.arrow-right'),
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 2,
+            prevArrow: $carouselUpdateShow.find('.arrow-left'),
+            nextArrow: $carouselUpdateShow.find('.arrow-right')
+          }
+        },
+        {
+          breakpoint: 500,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            prevArrow: $carouselUpdateShow.find('.arrow-left'),
+            nextArrow: $carouselUpdateShow.find('.arrow-right')
+          }
+        }
+      ]
+    });
+
+  });

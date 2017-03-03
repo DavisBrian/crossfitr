@@ -1,0 +1,33 @@
+define([
+  "jquery",
+  "slick"
+  ], function($, slick) {
+    var $container = $('.js-announcements-slider-container');
+    $('.js-announcements-slider').slick({
+      slidesToShow: 3,
+      slidesToScroll: 3,
+      infinite: false,
+      prevArrow: $container.find('.js-arrow-left'),
+      nextArrow: $container.find('.js-arrow-right'),
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 2,
+            prevArrow: $container.find('.js-arrow-left'),
+            nextArrow: $container.find('.js-arrow-right')
+          }
+        },
+        {
+          breakpoint: 768,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            prevArrow: $container.find('.js-arrow-left'),
+            nextArrow: $container.find('.js-arrow-right')
+          }
+        }
+      ]
+    });
+  });

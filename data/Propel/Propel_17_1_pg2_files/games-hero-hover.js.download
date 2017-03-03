@@ -1,0 +1,15 @@
+define([
+  "jquery"
+  ], function($) {
+
+    var $parallaxEl = $('[class^="parallax-slider parallax-slider-hero-"]');
+
+    var $playButton = $parallaxEl.find('button');
+
+    $('.hero .media-trigger').hover( function() {
+      $playButton.addClass('active');
+    }, function() {
+      $playButton.removeClass('active');
+    });
+
+  });

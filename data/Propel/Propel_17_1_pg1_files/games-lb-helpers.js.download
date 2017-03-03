@@ -1,0 +1,678 @@
+define(["games-lb-config", "jquery", "underscore", "bloodhound", "jquery.querystring", "typeahead-custom"], function (config, $, _, Bloodhound) {
+
+
+  // HELPERS
+
+  function seed (update, stateAccessor) {
+    return getLeaderboardInfo(update)
+             .then(function (searchResults) {
+               getQueryString(update);
+               var state = stateAccessor();
+               return retrieveLeaderboard(update, state);
+             })
+             .then(function () {
+               var state = stateAccessor();
+               if (state.persistQueryString) setQueryString(createQueryObject(state));
+               update("completeInitialization");
+             });
+  }
+
+  function getLeaderboardInfo (update) {
+    update("startLoading");
+    return $.get(config.LEADERBOARD_INFO_ENDPOINT)
+            .then(function (response) {
+              // normalize the workouts hash table
+              var workoutKeys = Object.keys(response.workouts);
+              workoutKeys.sort();
+              var workouts = workoutKeys.map(function (k) {
+                return response.workouts[k];
+              });
+              // normalize control data
+              // add the search box
+              response.controls.push({
+                name: config.CONTROL.NAME.ATHLETE_SEARCH,
+                label: "Athletes",
+                placeholder: "Search",
+                type: config.CONTROL.TYPE.SEARCH
+              });
+              // initialize selectedValue properties
+              response.controls.forEach(function (c, i) {
+                c.index = i;
+                if (c.name === config.CONTROL.NAME.COMPETITION) {
+                  c.selectedValue = config.CONTROL.VALUE.COMPETITION.OPEN;
+                } else if (c.name === config.CONTROL.NAME.YEAR) {
+                  c.selectedValue = config.CONTROL.VALUE.YEAR["2017"];
+                } else if (c.type === config.CONTROL.TYPE.SELECT) {
+                  c.selectedValue = c.data[0].value;
+                } else if (c.type === config.CONTROL.TYPE.MULTISELECT) {
+                  c.selectedValue = c.data[0].value;
+                  c.childName = c.name + config.MULTISELECT_CHILD_ID;
+                  c.data.forEach(function (cc, ii) {
+                    cc.index = ii;
+                    cc.name = c.childName;
+                    cc.parentName = c.name;
+                    if (cc.value == config.CONTROL.VALUE.FITTEST.REGION) {
+                      cc.selectedValue = cc.selects[0].value;
+                    } else {
+                      var randomIndex = randomInt(0, cc.selects.length);
+                      cc.selectedValue = cc.selects[randomIndex].value;
+                    }
+                  });
+                } else if (c.type === config.CONTROL.TYPE.SEARCH) {
+                  c.selectedValue = {
+                    display: "",
+                    value: null
+                  };
+                }
+              });
+              // return normalized data
+              return {
+                controls: response.controls,
+                workouts: workouts,
+                meta: {
+                  leaderboardName: response.name,
+                  leaderboardYear: response.year
+                }
+              };
+            })
+            .then(function (response) {
+              update("setControls", response.controls);
+              update("setWorkouts", response.workouts);
+              update("setMeta", response.meta);
+              update("stopLoading");
+              return response;
+            }, function (error) {
+              persistGlobalError(update, config.GENERIC_ERROR_MESSAGE);
+              console.error(error);
+            });
+  }
+
+  function retrieveLeaderboard (update, state) {
+    var queryObject = createQueryObject(state);
+    var shouldSetQueryString = state.initialized && state.persistQueryString;
+    update("startLoading");
+    return $.get(config.RETRIEVE_LEADERBOARD_ENDPOINT + $.param(queryObject))
+            .then(function (response) {
+              // determine index for qualifying rank
+              var lowestQualifyingRank = getLowestQualifyingRank(state.controls.list);
+              // determine whether the current page will be showing the lowest-ranking qualifier
+              var cp = response.currentpage;
+              var startRank = Math.max((cp - 1) * config.PAGE_SIZE, 1);
+              var endRank = startRank + response.athletes.length;
+              var shouldShowBottomBorder = lowestQualifyingRank &&
+                                           lowestQualifyingRank >= startRank &&
+                                           lowestQualifyingRank <= endRank;
+              // add a property signifying a bottom blue border for thelowest qualifying athlete
+              if (shouldShowBottomBorder) {
+                var lowestQualifyingIndex = (lowestQualifyingRank - 1) % config.PAGE_SIZE;
+                response.athletes[lowestQualifyingIndex].hasBottomBorder = true;
+              }
+              // return the search results
+              return {
+                athletes: response.athletes,
+                footer: {
+                  totalPages: response.totalpages,
+                  currentPage: response.currentpage,
+                  allExpanded: false
+                }
+              };
+            })
+            .then(function (searchResults) {
+              update("setAthletes", searchResults.athletes);
+              update("setFooter", searchResults.footer);
+              update("stopLoading");
+              if (shouldSetQueryString) setQueryString(queryObject); // update query string
+              return searchResults;
+            }, function (error) {
+              persistGlobalError(update, config.GENERIC_ERROR_MESSAGE);
+              console.error(error);
+            });
+  }
+
+  function retrieveAffiliateLeaderboard (update, state) {
+    update("startLoading");
+    return $.get(config.RETRIEVE_LEADERBOARD_ENDPOINT + "affiliate=" + state.activeAffiliateId + "&page=" + (state.footer.currentPage || 1))
+            .then(function (response) {
+              // return the search results
+              return {
+                athletes: response.athletes,
+                footer: {
+                  totalPages: response.totalpages,
+                  currentPage: response.currentpage,
+                  allExpanded: false
+                }
+              };
+            })
+            .then(function (searchResults) {
+              update("setAthletes", searchResults.athletes);
+              update("setFooter", searchResults.footer);
+              update("stopLoading");
+              return searchResults;
+            }, function (error) {
+              persistGlobalError(update, config.GENERIC_ERROR_MESSAGE);
+              console.error(error);
+            });
+  }
+
+  function createQueryObject (state) {
+    var controls = state.controls.list;
+    var result = controls.reduce(function (queryObject, c) {
+      if (c.type === config.CONTROL.TYPE.SELECT) {
+        queryObject[c.name] = c.selectedValue;
+      } else if (c.type === config.CONTROL.TYPE.MULTISELECT) {
+        queryObject[c.name] = c.selectedValue;
+        var child = _.findWhere(c.data, { value: c.selectedValue });
+        queryObject[child.name] = child ? child.selectedValue : undefined;
+      } else if (c.type === config.CONTROL.TYPE.SEARCH && c.selectedValue) {
+        if (c.selectedValue.value) {
+          // serialize athlete ID for back-end requests
+          queryObject[c.name] = c.selectedValue.value;
+          // user underscore delimeter to serialize display value
+          queryObject[c.name + config.SEARCH_DISPLAY_SUFFIX] = c.selectedValue.display;
+        }
+      }
+      return queryObject;
+    }, {});
+    if (state.perPage) result.perpage = state.perPage; // for personalized leaderboards only
+    result.page = state.footer.currentPage || 1
+    return result;
+  }
+
+  // this function serializes two states to an array of values
+  // then deep-compares each array to see whether the states are different
+  function controlChangesBetweenStates (previousState, newState) {
+
+    function getValuesToCompare (state) {
+      return state.controls.list
+              .map(function (c) {
+                var sv = c.selectedValue;
+                if (_.isObject(sv)) {
+                  return sv.value;
+                } else {
+                  return sv;
+                }
+              })
+              .concat(state.controls.list.reduce(function (r, c) {
+                if (c.type === config.CONTROL.TYPE.MULTISELECT) {
+                  r.push(_.findWhere(c.data, { value: c.selectedValue }));
+                }
+                return r;
+              }, []))
+              .concat([state.footer.currentPage]);
+    }
+
+    return !_.isEqual(getValuesToCompare(previousState), getValuesToCompare(newState));
+  }
+
+  function findIndexWhere (arr, search) {
+    var v = _.findWhere(arr, search);
+    return v ? arr.indexOf(v) : -1;
+  }
+
+  function getQueryString (update) {
+    update("propagateQueryObject", $.currentQueryString());
+  }
+
+  function setQueryString (queryObject) {
+    if (window.history.replaceState) {
+      var newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname + "?" + $.param(queryObject);
+      window.history.replaceState({}, "", newUrl);
+    }
+  }
+
+  function scrollToTop () {
+    scrollTo(0);
+  }
+
+  function scrollTo (scrollTop) {
+    $("html, body").animate({
+      scrollTop: scrollTop
+    }, 400);
+  }
+
+  /**
+   * Get's the selected division's values from an array of controls
+   */
+
+  function getSelectedDivision (controls) {
+    var divisionControl = _.findWhere(controls, { name: config.CONTROL.NAME.DIVISION });
+    if (!_.isObject(divisionControl)) return config.CONTROL.VALUE.DIVISION.DEFAULT;
+    return divisionControl.selectedValue || config.CONTROL.VALUE.DIVISION.DEFAULT;
+  }
+
+  /**
+   * Get's the selected athlete's ID from an array of controls
+   */
+
+  function getSelectedAthleteID (controls) {
+    var athleteControl = _.findWhere(controls, { name: config.CONTROL.NAME.ATHLETE_SEARCH });
+    if (!_.isObject(athleteControl)) return null;
+    return athleteControl.selectedValue.value || null;
+  }
+
+  /**
+   * virtual-dom hook for athlete typeahead search in leaderboard controls
+   */
+
+  function SearchWidget (options) {
+    this.options = options || {};
+  }
+
+  SearchWidget.prototype.type = "Widget";
+
+  SearchWidget.prototype.init = function () {
+
+    // create the element
+    var node = document.createElement("input");
+    $node = $(node);
+    this.$node = $node; // cache the node
+    $node.attr({
+      type: "text",
+      id: "control-" + this.options.name,
+      placeholder: this.options.placeholder
+    });
+
+    // set up bloodhound source
+    var source = createAthleteSearchSource(this.options.division);
+    this.source = source;
+
+    var name = this.options.name;
+    var selectHandler = this.options.selectHandler;
+    var changeHandler = this.options.changeHandler;
+    var startLoadingHandler = this.options.startLoadingHandler;
+    var stopLoadingHandler = this.options.stopLoadingHandler;
+    var initialDisplay = this.options.display;
+
+    // need to run this at the end of the event loop
+    // as virtual-dom has not attached the element to the DOM yet --
+    // typeahead needs an element to be in the DOM to be able
+    // to render autocomplete suggestions.
+    window.setTimeout(function () {
+      // attach typeahead.
+      $node.typeahead({
+        minLength: 3
+      }, {
+        name: name,
+        display: "name",
+        source: source.source,
+        limit: 1000,
+        templates: {
+          suggestion: function (athlete) {
+            return "<div><b>" + athlete.name + "</b> " + athlete.affiliate + "</div>";
+          }
+        }
+      });
+      // add select handler
+      if (selectHandler) $node.on("typeahead:select", selectHandler);
+      if (changeHandler) $node.on("typeahead:change", changeHandler);
+      if (startLoadingHandler) $node.on("typeahead:asyncrequest", startLoadingHandler);
+      if (stopLoadingHandler) {
+        $node.on("typeahead:asynccancel", stopLoadingHandler);
+        $node.on("typeahead:asyncreceive", stopLoadingHandler);
+      }
+      // initialize the value
+      $node.typeahead("val", initialDisplay);
+    }, 0);
+
+    return node;
+
+  };
+
+  SearchWidget.prototype.update = function (prev, node) {
+    // update the node cache for efficiency
+    // and because vdom's element ref changes as typeahead manipulates the DOM
+    this.$node = prev.$node;
+    // create reference to bloodhound source, update the division
+    this.source = prev.source;
+    this.source.updateDivision(this.options.division);
+    // update the displayed text
+    if (this.options.display !== prev.options.display)
+      $node.typeahead("val", this.options.display);
+  };
+
+  SearchWidget.prototype.destroy = function (node) {
+    var $node = this.$node;
+    $node.off("typeahead:select");
+    $node.off("typeahead:change");
+    $node.off("typeahead:asyncrequest");
+    $node.off("typeahead:asyncreceive");
+    $node.off("typeahead:asynccancel");
+    $node.typeahead("destroy");
+  };
+
+  /**
+   * Create's a URL to GET athletes based on a query and division value
+   */
+
+  function createAthleteSearchUrl (query, division) {
+    return config.ATHLETE_SEARCH_ENDPOINT + "term=" + query + "&division=" + division;
+  }
+
+  /**
+   * Creates a typeahead source for sourcing athletes
+   */
+
+  function createAthleteSearchSource (division) {
+    return {
+      updateDivision: function (d) {
+        division = d || division;
+      },
+
+      source: new Bloodhound({
+        datumTokenizer: Bloodhound.tokenizers.obj.whitespace("name"),
+        queryTokenizer: Bloodhound.tokenizers.whitespace,
+        remote: {
+          url: createAthleteSearchUrl("", division),
+          rateLimitWait: 600, // Default is 300
+          prepare: function (query, settings) {
+            settings.url = createAthleteSearchUrl(query, division);
+            return settings;
+          }
+        }
+      })
+    };
+  }
+
+  /**
+   * Selects a random integer between a range
+   */
+
+  function randomInt (min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min) + min);
+  }
+
+  /**
+   * Propagates an error to the state
+   */
+
+  function persistGlobalError (update, message) {
+    update("globalError", { message: message });
+  }
+
+  /**
+   * Athlete row nodes with this hook will be scrolled to.
+   * Intended for use with the first highlighted athlete on a particular page.
+   */
+
+  function AthleteScrollHook (timestamp) {
+    // use a timestamp to track whether the athlete should be scrolled to or not.
+    // solves the edge case of the same athlete needing to be scrolled
+    // to for a second time after a control update.
+    this.timestamp = timestamp;
+  }
+
+  AthleteScrollHook.prototype.hook = function (node, propertyName, prev) {
+    // do nothing if already scrolled once
+    if (prev && prev.completed && prev.timestamp === this.timestamp) {
+      this.completed = true;
+      return;
+    }
+    // scroll on a timeout
+    var self = this;
+    this.timeout = window.setTimeout(function () {
+      // adjust scroll distance for the fixed headers
+      var distance = Math.max(0, $(node).offset().top - $("#globalMenu").outerHeight() - $("#gamesMenu").outerHeight() - 1);
+      scrollTo(distance + "px");
+      self.completed = true;
+    }, 400); // leaves enough time for DOM insertion and expansion animation
+  };
+
+  AthleteScrollHook.prototype.unhook = function (node, propertyName, next) {
+    window.clearTimeout(this.timeout);
+  };
+
+  /**
+   * Adds a class to the given node at the end of a CSS transition.
+   * It only adds the listener if the class name has changes on updates.
+   */
+
+  function TransitionEndClassHook (className) {
+    this.className = className;
+    this.handler = function () {
+      $(this).toggleClass(className, true);
+    };
+  }
+
+  TransitionEndClassHook.prototype.hook = function (node, propertyName, prev) {
+    // manage the hook
+    //var $node = $(node);
+    //if (!prev || this.className !== prev.className) {
+    //}
+    //// cache the node on this hook instance
+    //this.node = node;
+    $(node).on("transitionend webkitTransitionEnd", this.handler);
+  };
+
+  TransitionEndClassHook.prototype.unhook = function (node, propertyName, next) {
+    $(node).off("transitionend webkitTransitionEnd", this.handler);
+  };
+
+  /**
+   * Given a list of controls, retrieves a redirect URL.
+   * If no redirect is to occur, this function returns a falsey value.
+   */
+
+  function getRedirectUrl (controls) {
+    var competition = _.findWhere(controls, { name: config.CONTROL.NAME.COMPETITION });
+    var year = _.findWhere(controls, { name: config.CONTROL.NAME.YEAR });
+    competition = competition ? competition.selectedValue : null;
+    year = year ? year.selectedValue : null;
+    var urls = competition && year && config.COMPETITION_REDIRECT_URLS[competition];
+    return urls && urls[year];
+  }
+
+  /**
+   * Normalizes the array of an athlete's scores in place
+   */
+
+  function normalizeAthleteScores (athlete, numWorkouts) {
+    var score;
+    for (var i = 0; i < numWorkouts; i++) {
+      score = athlete.scores[i];
+      if (_.isObject(score) && score.exists !== false) {
+        score.exists = true;
+      } else {
+        athlete.scores[i] = { exists: false };
+      }
+    }
+  }
+
+  /**
+   * Returns a URL for an athlete's profile
+   * based on their userId and division (individual vs. team)
+   */
+
+  function getAthleteProfileLink (userId, division) {
+    var base = "/athlete/";
+    if (division == config.CONTROL.VALUE.DIVISION.TEAM) base = "/team/";
+    return base + userId;
+  }
+
+  /**
+   * Returns a number (index) that indicates the qualifying rank
+   * for the current state of the controls.
+   * Returns undefined if there is no qualifying rank.
+   *
+   * Implementation is not ideal, but it seemed like the safest approach
+   * to enumerate the values in games-lb-config.js and refer to them
+   * in conditional statements here.
+   */
+
+  function getLowestQualifyingRank (controls) {
+    var division = getControlSelectedValue(controls, config.CONTROL.NAME.DIVISION);
+    var sort = getControlSelectedValue(controls, config.CONTROL.NAME.SORT);
+    var workoutType = getControlSelectedValue(controls, config.CONTROL.NAME.WORKOUT_TYPE);
+    var fittest = getControlSelectedValue(controls, config.CONTROL.NAME.FITTEST);
+    var region = getControlSelectedValue(controls, config.CONTROL.NAME.FITTEST, config.CONTROL.VALUE.FITTEST.REGION);
+    var occupation = getControlSelectedValue(controls, config.CONTROL.NAME.OCCUPATION);
+
+    // this logic is for the Open ONLY
+    // when regionals and games are supported by this app,
+    // this logic will need to be expanded
+    if (sort == config.CONTROL.VALUE.SORT.OVERALL &&
+        workoutType == config.CONTROL.VALUE.WORKOUT_TYPE.RXD &&
+        fittest == config.CONTROL.VALUE.FITTEST.REGION &&
+        occupation == config.CONTROL.VALUE.OCCUPATION.ALL) {
+
+      if (region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.EUROPE ||
+          region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.AUSTRALIA) {
+
+        if (division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_WOMEN ||
+            division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_MEN) {
+
+          return 30;
+
+        } else if (division == config.CONTROL.VALUE.DIVISION.TEAM) {
+
+          return 20;
+
+        }
+
+      } else if (region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.ASIA ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.AFRICA ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.LATIN_AMERICA) {
+
+        if (division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_WOMEN ||
+            division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_MEN ||
+            division == config.CONTROL.VALUE.DIVISION.TEAM) {
+
+          return 10;
+
+        }
+
+      } else if (region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.CENTRAL_EAST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.MID_ATLANTIC ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.NORTHERN_CALIFORNIA ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.SOUTHERN_CALIFORNIA ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.SOUTH_CENTRAL ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.SOUTH_EAST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.SOUTH_WEST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.CANADA_EAST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.CANADA_WEST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.NORTH_WEST ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.NORTH_CENTRAL ||
+                 region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.NORTH_EAST) {
+
+
+        if (division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_WOMEN ||
+            division == config.CONTROL.VALUE.DIVISION.INDIVIDUAL_MEN) {
+
+          return 20;
+
+        } else if (division == config.CONTROL.VALUE.DIVISION.TEAM) {
+
+          return 15;
+
+        }
+
+      } else if (region == config.CONTROL.VALUE.FITTEST.REGION_CHILD.WORLDWIDE) {
+
+        if (division == config.CONTROL.VALUE.DIVISION.TEEN_GIRLS_14_15 ||
+            division == config.CONTROL.VALUE.DIVISION.TEEN_GIRLS_16_17 ||
+            division == config.CONTROL.VALUE.DIVISION.TEEN_BOYS_14_15 ||
+            division == config.CONTROL.VALUE.DIVISION.TEEN_BOYS_16_17 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_35_39 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_40_44 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_45_49 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_50_54 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_55_59 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_WOMEN_60_PLUS ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_35_39 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_40_44 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_45_49 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_50_54 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_55_59 ||
+            division == config.CONTROL.VALUE.DIVISION.MASTERS_MEN_60_PLUS) {
+
+          return 200;
+
+        }
+
+      }
+
+    }
+  }
+
+  /**
+   * Returns the selected value for a particular control, specified by name.
+   * Optional third argument gets the selected value for a multiselect's child.
+   */
+
+  function getControlSelectedValue (controls, name, multiSelectChildValue) {
+    var control = _.findWhere(controls, { name: name });
+    var value;
+    if (!control) {
+      return;
+    } else if (!multiSelectChildValue) {
+      value = control.selectedValue;
+    } else {
+      var child = _.findWhere(control.data, { value: multiSelectChildValue });
+      value = child && child.selectedValue;
+    }
+    return value;
+  }
+
+  /**
+   * Returns a relative URL for a particular workout
+   */
+
+  function getWorkoutURL (competition, year, workout, division) {
+    return "/workouts/" + getCompetitionName(competition) + "/" + year + "/" + workout + "?" + config.CONTROL.NAME.DIVISION + "=" + division;
+  }
+
+  /**
+   * Returns a human readable identifier for a workout
+   */
+
+  function getCompetitionName (competitionValue) {
+    if (competitionValue == config.CONTROL.VALUE.COMPETITION.OPEN) {
+      return "open";
+    } else if (competitionValue == config.CONTROL.VALUE.COMPETITION.REGIONAL) {
+      return "regional";
+    } else if (competitionValue == config.CONTROL.VALUE.COMPETITION.GAMES) {
+      return "games";
+    } else {
+      return "";
+    }
+  }
+
+  /**
+   * Returns a url for a score given a score ID
+   */
+
+  function createScoreVideoURL (scoreId) {
+    return "/review-scores/" + scoreId + "/video-review";
+  }
+
+  // EXPORTS
+
+  return {
+    seed: seed,
+    getLeaderboardInfo: getLeaderboardInfo,
+    retrieveLeaderboard: retrieveLeaderboard,
+    retrieveAffiliateLeaderboard: retrieveAffiliateLeaderboard,
+    createQueryObject: createQueryObject,
+    controlChangesBetweenStates: controlChangesBetweenStates,
+    findIndexWhere: findIndexWhere,
+    getQueryString: getQueryString,
+    setQueryString: setQueryString,
+    scrollToTop: scrollToTop,
+    scrollTo: scrollTo,
+    getSelectedDivision: getSelectedDivision,
+    getSelectedAthleteID: getSelectedAthleteID,
+    SearchWidget: SearchWidget,
+    AthleteScrollHook: AthleteScrollHook,
+    TransitionEndClassHook: TransitionEndClassHook,
+    getRedirectUrl: getRedirectUrl,
+    normalizeAthleteScores: normalizeAthleteScores,
+    getAthleteProfileLink: getAthleteProfileLink,
+    getLowestQualifyingRank: getLowestQualifyingRank,
+    getControlSelectedValue: getControlSelectedValue,
+    getWorkoutURL: getWorkoutURL,
+    getCompetitionName: getCompetitionName,
+    createScoreVideoURL: createScoreVideoURL
+  };
+
+});

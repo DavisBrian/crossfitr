@@ -1,0 +1,84 @@
+define([
+  "jquery",
+  "modal",
+  "cropit"
+  ], function($) {
+
+    var $modal        = $('#editProfilePhoto'),
+        $profileModal = $('#profileModal');
+
+    $modal.on('show.bs.modal');
+
+    $modal.on('click', function(e){
+        $this = $(this);
+        $profileModal.find('form.ajax').attr('action', $this.data('action'));
+    });
+
+    var $imageCropper = $profileModal.find('#imageCropper'),
+        $submitButton = $profileModal.find('#savePhotoBtn'),
+        $selectButton = $profileModal.find('#selectPhotoBtn');
+
+    $imageCropper.cropit({
+        maxZoom: 2,
+        width: 400,
+        height: 400,
+        onFileChange: function() {
+            $submitButton.show();
+            $selectButton.blur();
+        }
+    });
+
+    // WHEN USER CLICKS SELECT IMAGE BUTTON,
+    // OPEN SELECT FILE DIALOG PROGRAMMATICALLY
+    $selectButton.click(function(e) {
+      e.preventDefault();
+      $profileModal.find('.cropit-image-input').click();
+    });
+
+    // HANDLE ROTATION
+    $profileModal.find('.rotate-cw-btn').click(function() {
+      $imageCropper.cropit('rotateCW');
+    });
+    $profileModal.find('.rotate-ccw-btn').click(function() {
+      $imageCropper.cropit('rotateCCW');
+    });
+
+    $submitButton.on('click', function(e){
+      e.preventDefault();
+      $(this).parent('form#formProfile').submit();
+    });
+
+    $('form#formProfile').on('submit', function(e) {
+      e.preventDefault();
+
+      $submitButton.prop('disabled', true);
+
+      var imageExport = $profileModal.find('#imageCropper').cropit('export',{
+        type: 'image/jpeg',
+        quality: 1
+      });
+
+      $profileModal.find('#croppedFile').val(imageExport);
+
+      var $this = $(this);
+
+      window.setTimeout(function() {
+          $.ajax({
+            url: $this.attr('action'),
+            type: $this.attr('method'),
+            dataType: 'json',
+            async: true,
+            cache: false,
+            data: $this.serialize(),
+            success: function(data) {
+              if(data.success) {
+                location.reload();
+              } else if(data.error) {
+                $('#errorMessage').text(data.message).show().delay(3000).fadeOut('slow');
+                $submitButton.prop('disabled', false);
+              }
+            }
+          });
+        }, 100);
+    });
+});

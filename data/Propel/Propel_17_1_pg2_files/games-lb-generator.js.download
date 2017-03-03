@@ -1,0 +1,62 @@
+define([
+  "dynamic-component",
+  "jquery",
+  "games-lb-init",
+  "games-lb-update",
+  "games-lb-render"
+], function (dc, $, init, update, render) {
+
+  function generate (options) {
+    $(function () {
+
+      // initialize scope
+      options = options || {};
+      init = options.init || init;
+      update = options.update || update;
+      render = options.render || render;
+      var selector = options.selector || ".lb-main";
+      var callback = options.callback || function () {};
+
+      // query the leaderboard element
+      var element = document.querySelector(selector);
+      // if no element is found, exit
+      if (!element) return;
+
+      // initialize up the state mutator
+      var stateMutator = init();
+
+      // bind the update function to the stateMutator
+      var boundUpdate = update.bind(null, stateMutator);
+
+      // create a one-way state accessor function
+      var stateAccessor = function () {
+        return stateMutator.get();
+      };
+
+      // create a one-way state subscriber function
+      var stateSubscriber = function () {
+        stateMutator.subscribe.apply(stateMutator, arguments);
+      };
+
+      // bind the dynamic componet to the DOM
+      // the render function is bound to an update function for unidirectional data flow
+      dc.bind(stateMutator, render.bind(null, boundUpdate), element);
+
+      // listen to window resize events
+      // check if display width qualifies the device as a mobile
+      $(window).on("resize", _.throttle(function (event) {
+        boundUpdate("windowResize", {
+          width: window.innerWidth,
+          height: window.innerHeight
+        });
+      }, 500));
+
+      // perform custom business logic using the supplied callback
+      callback(boundUpdate, stateAccessor, stateSubscriber, element);
+
+    });
+  }
+
+  return generate;
+
+});

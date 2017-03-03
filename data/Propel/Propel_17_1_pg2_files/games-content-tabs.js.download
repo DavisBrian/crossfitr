@@ -1,0 +1,15 @@
+define([
+  "jquery",
+  ], function($) {
+    $('.cf-content-tabs li a').first().addClass('active');
+    $('.cf-content-tabs .tab-content').first().addClass('active');
+    $('.cf-content-tabs li a').click(function(e) {
+      e.preventDefault(); 
+      $('.cf-content-tabs li a').removeClass('active');
+      $('.cf-content-tabs .tab-content').removeClass('active');
+
+      var tabId = $(this).attr('href');
+      $(this).addClass('active');
+      $('.cf-content-tabs ' + tabId).addClass('active');
+    });
+  });

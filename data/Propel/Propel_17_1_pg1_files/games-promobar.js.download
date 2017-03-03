@@ -1,0 +1,19 @@
+define([
+  "jquery"
+  ], function($) {
+      $(".registration-links .links > .registration-link > a:not(.single)").click(function(e) {
+        e.preventDefault();
+        $this = $(this);
+        if ( $this.parent().hasClass("active") ) {
+          $this.parent().removeClass("active");
+          $this.parent().find(".registration-link-list").hide();
+          $this.parent().find(".cficon-play2").css('display', 'inline-block');
+          $this.parent().find(".cficon-carrot-down").hide();
+        } else {
+          $this.parent().addClass("active");
+          $this.parent().find(".registration-link-list").show();
+          $this.parent().find(".cficon-play2").hide();
+          $this.parent().find(".cficon-carrot-down").css('display', 'inline-block');
+        }
+      }); 
+  });

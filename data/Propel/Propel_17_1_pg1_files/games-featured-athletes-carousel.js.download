@@ -1,0 +1,36 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    $('#home .athletes-featured').show();
+
+    var $carouselAthletes = $('#home .athletes-featured .carousel')
+
+    $carouselAthletes.find('.js-carousel').slick({
+      slidesToShow: 4,
+      slidesToScroll: 4,
+      prevArrow: $carouselAthletes.find('.arrow-left'),
+      nextArrow: $carouselAthletes.find('.arrow-right'),
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 2,
+            slidesToScroll: 2,
+            prevArrow: $carouselAthletes.find('.arrow-left'),
+            nextArrow: $carouselAthletes.find('.arrow-right'),
+          }
+        },
+        {
+          breakpoint: 500,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            prevArrow: $carouselAthletes.find('.arrow-left'),
+            nextArrow: $carouselAthletes.find('.arrow-right'),
+          }
+        }
+      ]
+    });
+
+  });

@@ -1,0 +1,83 @@
+define([
+  "jquery",
+  "tabs",
+  "jquery.stickytabs",
+  "slick",
+  "scrollspy"
+  ], function($) {
+    $(function() {
+      function buildCarousels() {
+        // init/reinit carousel
+        var $mainContainer = $('.js-carousel-main-conainer');
+        var $thumbnailsContainer = $('.js-carousel-thumbnails-container');
+
+        var $mainCarousel = $mainContainer.find('.js-carousel');
+        var $thumbnailsCarousel = $thumbnailsContainer.find('.js-carousel');
+        [$mainCarousel, $thumbnailsCarousel].forEach(function(c) {
+          if (c.hasClass('slick-initialized')) {
+            c.slick('unslick');
+          }
+        });
+        $mainCarousel.slick({
+          dots: false,
+          slidesToShow: 1,
+          arrows: false,
+          asNavFor: $thumbnailsCarousel,
+          fade: true,
+          adaptiveHeight: true,
+          prevArrow: $mainContainer.find('.js-arrow-left'),
+          nextArrow: $mainContainer.find('.js-arrow-right'),
+          responsive: [
+            {
+              breakpoint: 993,
+              settings: {
+                arrows: true,
+                fade: false,
+                prevArrow: $mainContainer.find('.js-arrow-left'),
+                nextArrow: $mainContainer.find('.js-arrow-right')
+              }
+            } 
+          ]
+        });
+        $thumbnailsCarousel.slick({
+          dots: false,
+          slidesToShow: 3,
+          centerMode: true,
+          centerPadding: '60px',
+          adaptiveHeight: true,
+          focusOnSelect: true,
+          variableWidth: true,
+          asNavFor: $mainCarousel,
+          prevArrow: $thumbnailsContainer.find('.js-arrow-left'),
+          nextArrow: $thumbnailsContainer.find('.js-arrow-right')
+        });
+      }
+
+      function scrollToTabs($tabs) {
+        var headerHeight = $('#globalMenu').height() + $('#gamesMenu').height() + 100;
+        $("html, body").animate({ scrollTop: $tabs.offset().top - headerHeight }, 1000);
+      }
+
+      function renderForCurrentTab($tabs, hash) {
+        if (hash !== '') {
+          if (hash == "#movementStandards") {
+            buildCarousels();
+          }
+          scrollToTabs($tabs);
+        }
+      }
+
+      $(function() {
+        var $tabs = $('.js-open-workout-tabs');
+        $tabs.stickyTabs();
+        $tabs.find('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+          var href = $(this).attr('href');
+          renderForCurrentTab($tabs, href);
+        });
+        renderForCurrentTab($tabs, window.location.hash);
+      });
+    
+    });
+  });
+
+

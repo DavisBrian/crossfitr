@@ -1,0 +1,25 @@
+define([
+  "jquery"
+  ], function($) {
+
+    $("#basicPage .years-list li:not('.years-nav') a").click(function(e) {
+      e.preventDefault();
+      $(".years-list a").removeClass("active");
+      $(e.currentTarget).addClass("active");
+    })
+
+    $("#basicPage .years-list li.years-nav a").click(function(e) {
+      e.preventDefault();
+      var $active = $(".years-list a.active");
+      $(".years-list a").removeClass("active");
+      $active.parent().next("li:not('.years-nav')").find("a").addClass("active");
+    })
+
+    $("#basicPage .basic-nav a").click(function(e) {
+      e.preventDefault();
+      $(".basic-nav a").removeClass("active");
+      $(e.currentTarget).addClass("active");
+    })
+});
+
+

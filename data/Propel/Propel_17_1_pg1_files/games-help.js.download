@@ -1,0 +1,11 @@
+define([
+  "jquery"
+  ], function($) {
+
+    var $nav = $('#helpNav');
+
+    $nav.on('click', 'li > span', function(){
+      var $this = $(this);
+      $this.next('ul').slideToggle("fast");
+    });
+});

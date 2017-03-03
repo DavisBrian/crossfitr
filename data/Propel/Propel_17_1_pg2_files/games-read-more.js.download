@@ -1,0 +1,8 @@
+define(["jquery", "readmore-js"], function($) {
+  $('.js-read-more').readmore({
+    moreLink: '<div class="text-center"><a href="javascript:void(0)" class="bio-read-more">Read More</a></div>',
+    lessLink: '',
+    embedCSS: false
+  });
+});
+

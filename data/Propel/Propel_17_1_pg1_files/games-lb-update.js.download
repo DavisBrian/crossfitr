@@ -1,0 +1,265 @@
+define(["games-lb-helpers", "games-lb-config", "underscore"], function (helpers, config, _) {
+  return function update (stateMutator, msg, data) {
+
+    var boundUpdate = update.bind(null, stateMutator); // bind update function here to prevent scope confusion
+    var state = stateMutator.get();
+    
+    switch (msg) {
+
+      case "startLoading":
+        stateMutator.set({
+          loadingCount: state.loadingCount + 1
+        });
+        break;
+
+      case "stopLoading":
+        stateMutator.set({
+          loadingCount: state.loadingCount - 1
+        });
+        break;
+
+      case "clearLoading":
+        stateMutator.set({
+          loadingCount: 0
+        });
+        break;
+
+      case "completeInitialization":
+        stateMutator.set({
+          initialized: true
+        });
+        break;
+
+      case "globalError":
+        stateMutator.set({
+          globalError: data.message || ""
+        });
+        break;
+
+      case "windowResize":
+        // do nothing if the width and height have not changed
+        if (state.window.width === data.width && state.window.height === data.height) return;
+        // update the state's store of window width and height
+        state.window.width = data.width;
+        state.window.height = data.height;
+        stateMutator.set({
+          window: state.window
+        });
+        break;
+
+      case "setControls":
+        stateMutator.set({
+          controls: {
+            visible: state.controls.visible,
+            list: data
+          },
+          footer: state.footer
+        });
+        break;
+
+      case "setWorkouts":
+        stateMutator.set({
+          workouts: data,
+          footer: state.footer
+        });
+        break;
+
+      case "setAthletes":
+        // normalize the scores based on the number of workouts available
+        var firstHighlightFound = false;
+        var numWorkouts = state.workouts.length;
+        data.forEach(function (a, i) {
+          // mark the first highlighted athlete as necessary
+          // this property is used to determine which athlete to scroll to
+          if (!firstHighlightFound && a.highlight) {
+            a.firstHighlight = true;
+            a.timestamp = (new Date()).getTime();
+            firstHighlightFound = true;
+          } else if (a.highlight) {
+            a.firstHighlight = false;
+          }
+          // expand all highlighted athletes
+          if (a.highlight) {
+            a.expanded = true;
+          }
+          // initialize the athletes' alternateView properties
+          // for mobile
+          a.alternateView = false;
+          // pad the scores as necessary
+          helpers.normalizeAthleteScores(a, numWorkouts);
+        });
+        // persist to the state
+        stateMutator.set({
+          athletes: data,
+          showingHighlightedAthlete: firstHighlightFound
+        });
+        break;
+
+      case "setMeta":
+        stateMutator.set({
+          meta: data
+        });
+        break;
+
+      case "setFooter":
+        stateMutator.set({
+          footer: {
+            totalPages: data.totalPages || 0,
+            currentPage: data.currentPage || 0,
+            allExpanded: !!data.allExpanded
+          }
+        });
+        break;
+
+      case "toggleFilterVisibility":
+        var controls = state.controls;
+        controls.visible = !controls.visible;
+        stateMutator.set({
+          controls: controls,
+          footer: state.footer
+        });
+        break;
+
+      case "setControlSelectedValue":
+        // update control selected value
+        var controls = state.controls;
+        var control = controls.list[data.controlIndex];
+        // determine selected value
+        var sv = data.selectedValue;
+        if (_.isFunction(sv)) {
+          sv = sv(control);
+        }
+        // set selected value
+        control.selectedValue = sv;
+        // if the divison has changed, clear athlete selection
+        if (control.name === config.CONTROL.NAME.DIVISION) {
+          var athleteControl = _.findWhere(controls.list, { name: config.CONTROL.NAME.ATHLETE_SEARCH });
+          if (athleteControl) athleteControl.selectedValue = { display: "", value: null };
+        }
+        // set the current page to 1 as long as the updated control wasn't the athlete search
+        if (control.name !== config.CONTROL.NAME.ATHLETE_SEARCH)
+          state.footer.currentPage = 1;
+        // update state
+        stateMutator.set({
+          controls: controls,
+          footer: state.footer
+        });
+        break;
+
+      case "setControlEdited":
+        var controls = state.controls;
+        controls.list[data.controlIndex].edited = data.edited;
+        // update state
+        stateMutator.set({
+          controls: controls,
+          footer: state.footer
+        });
+        break;
+
+      case "setMultiselectChildSelectedValue":
+        var controls = state.controls;
+        var control = controls.list[data.controlIndex];
+        var selection = _.findWhere(control.data, { value: control.selectedValue });
+        selection = selection || control.data[0];
+        selection.selectedValue = data.selectedValue;
+        // set the current page to 1 
+        state.footer.currentPage = 1;
+        // update state
+        stateMutator.set({
+          controls: controls,
+          footer: state.footer
+        });
+        break;
+
+      case "propagateQueryObject":
+        // propagate page number
+        var footer = state.footer;
+        footer.currentPage = data.page || footer.currentPage;
+        // propagate control data
+        var controls = state.controls;
+        var multiselectControls = _.where(controls.list, { type: config.CONTROL.TYPE.MULTISELECT });
+        var multiselectChildControls = _.flatten(_.pluck(multiselectControls, "data"));
+        var keys = Object.keys(data || {});
+        keys.forEach(function (k) {
+          var option;
+          var control = _.findWhere(controls.list, { name: k });
+          // likely a multiselect child control
+          if (!control) control = _.find(multiselectChildControls, function (c) {
+            return data[c.parentName] === c.value && k === c.name;
+          });
+          // if no control is still found, do nothing
+          if (!control) return;
+          // assuming a control is found, update the control state
+          if (control.type === config.CONTROL.TYPE.SEARCH) {
+            control.selectedValue = {
+              display: data[k + config.SEARCH_DISPLAY_SUFFIX] || "",
+              value: data[k]
+            };
+          } else {
+            options = control.data || control.selects;
+            option = _.findWhere(options, { value: data[k] });
+            control.selectedValue = option ? data[k] : control.selectedValue;
+          }
+        });
+        stateMutator.set({
+          controls: controls,
+          footer: footer
+        });
+        break;
+
+      case "toggleAthleteExpansion":
+        var athlete = state.athletes[data.index];
+        if (_.isObject(athlete)) athlete.expanded = !athlete.expanded;
+        stateMutator.set({
+          athletes: state.athletes
+        });
+        break;
+
+      case "toggleAthleteAlternateView":
+        var athlete = state.athletes[data.index];
+        if (_.isObject(athlete)) athlete.alternateView = !athlete.alternateView;
+        stateMutator.set({
+          athletes: state.athletes
+        });
+        break;
+
+      case "toggleAllAthleteExpansions":
+        var footer = state.footer;
+        state.athletes.forEach(function (a) {
+          if (footer.allExpanded) {
+            a.expanded = false;
+          } else {
+            a.expanded = true;
+          }
+        });
+        footer.allExpanded = !footer.allExpanded;
+        stateMutator.set({
+          athletes: state.athletes,
+          footer: footer
+        });
+        break;
+
+      case "goToPage":
+        // calculate the next page number
+        var p = data.pageNumber;
+        if (!_.isNumber(p) || p < 1 || p > state.footer.totalPages) return;
+        state.footer.currentPage = p;
+        // clear athlete search
+        var controls = state.controls;
+        var athleteControl = _.findWhere(controls.list, { name: config.CONTROL.NAME.ATHLETE_SEARCH });
+        if (athleteControl) athleteControl.selectedValue = { display: "", value: null };
+        // update state
+        stateMutator.set({
+          controls: controls,
+          footer: state.footer
+        });
+        break;
+
+      default:
+        return;
+
+    };
+
+  }
+
+});

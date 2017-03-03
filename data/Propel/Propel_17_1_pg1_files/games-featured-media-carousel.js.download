@@ -1,0 +1,77 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    $('.media-featured').show();
+
+    var $carouselHighlighted = $('.media-featured .carousel-highlighted');
+    var $carouselThumbnails = $('.media-featured .carousel-thumbnails');
+
+    $carouselHighlighted.find('>.carousel-container').slick({
+      slidesToShow: 1,
+      slidesToScroll: 1,
+      asNavFor: '.media-featured .carousel-thumbnails > .carousel-container',
+      arrows: false,
+      fade: true,
+      draggable: false,
+      responsive: [
+        {
+          breakpoint: 993,
+          settings: {
+            slidesToShow: 1,
+            slidesToScroll: 1,
+            draggable: true,
+            fade: false,
+            dots: true,
+            arrows: false
+          }
+        }
+      ]
+    });
+
+    $carouselThumbnails.find('>.carousel-container').slick({
+      slidesToShow: 3,
+      slidesToScroll: 1,
+      asNavFor: '.media-featured .carousel-highlighted > .carousel-container',
+      centerPadding: '0px',
+      prevArrow: $carouselThumbnails.find('.js-arrow-left'),
+      nextArrow: $carouselThumbnails.find('.js-arrow-right'),
+      draggable: false,
+      infinite: false
+    });
+
+    $carouselThumbnails.find('.carousel-item').hover(
+      showMetaData,
+      hideMetaData
+    );
+
+    $carouselThumbnails.trigger('afterChange');
+
+    $carouselThumbnails.on('afterChange', function(event, slick, currentSlide, nextSlide) {
+      $this = $(this);
+      var lastSlide = $this.find('.slick-slide').length - 1;
+      switch(currentSlide) {
+        case 0:
+          $this.find('.cficon-chevron-left').hide();
+        break;
+        case lastSlide:
+          $this.find('.cficon-chevron-right').hide();
+        break;
+        default:
+          $this.find('.cficon').show();
+      }
+    });
+
+    function showMetaData() {
+      $(this).find('.date, .description')
+        .stop()
+        .slideDown(150);
+    }
+
+    function hideMetaData() {
+      $(this).find('.date, .description')
+        .stop()
+        .slideUp(150);
+    }
+
+  });

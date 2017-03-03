@@ -1,0 +1,67 @@
+define([
+  "jquery",
+  "modal",
+  "cropit"
+  ], function($) {
+
+    var $modal      = $('#editCoverPhoto');
+        $coverModal = $('#coverModal');
+
+    $modal.on('show.bs.modal');
+
+    $modal.on('click', function(e){
+        $this = $(this);
+        $coverModal.find('form.ajax').attr('action', $this.data('action'));
+    });
+
+    var $imageCropper = $coverModal.find('#imageCropper'),
+        $submitButton = $coverModal.find('#savePhotoBtn'),
+        $selectButton = $coverModal.find('#selectPhotoBtn');
+
+    $imageCropper.cropit({
+        width: 850,
+        height: 400,
+        onFileChange: function() {
+            $submitButton.show();
+            $selectButton.blur();
+
+        }
+    });
+
+    // WHEN USER CLICKS SELECT IMAGE BUTTON,
+    // OPEN SELECT FILE DIALOG PROGRAMMATICALLY
+    $selectButton.click(function(e) {
+      e.preventDefault();
+      $coverModal.find('.cropit-image-input').click();
+    });
+
+    $submitButton.on('click', function(e){
+      e.preventDefault();
+      $(this).parent('form#formCover').submit();
+    });
+
+    $('form#formCover').on('submit', function(e) {
+      e.preventDefault();
+      var $this = $(this);
+      $submitButton.prop('disabled', true);
+      var formData = new FormData($this[0]);
+
+      $.ajax({
+        url: $this.attr('action'),
+        type: $this.attr('method'),
+        data: formData,
+        async: false,
+        cache: false,
+        contentType: false,
+        processData: false,
+        success: function(data) {
+          if(data.success) {
+            location.reload();
+          } else if(data.error) {
+            $('#errorMessage').text(data.message).show().delay(3000).fadeOut('slow');
+            $submitButton.prop('disabled', false);
+          }
+        }
+      });
+    });
+});

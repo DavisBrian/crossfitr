@@ -1,0 +1,14 @@
+define([
+  "jquery"
+  ], function($) {
+    $mobileNavLinks = $('.video-mobile-nav a');
+    $mobileNavLinks.click(function(e) {
+      $mobileNavLinks.removeClass('active');
+      $('.video-text-content, .video-sidebar').hide();
+      $(e.currentTarget).addClass('active');
+      var showNav = $(e.currentTarget).data("navSection");
+      $("." + showNav).show();
+    })
+});
+
+

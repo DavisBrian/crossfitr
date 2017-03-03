@@ -1,0 +1,17 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+    $(function() {
+      var $container = $('.js-gallery-carousel-container');
+      var $carousel = $container.find('.js-gallery-carousel-images');
+
+      $carousel.slick({
+        dots: false,
+        slidesToShow: 1,
+        slidesToScroll: 1,
+        prevArrow: $container.find('.js-arrow-left'),
+        nextArrow: $container.find('.js-arrow-right'),
+      });
+    })
+  });
+

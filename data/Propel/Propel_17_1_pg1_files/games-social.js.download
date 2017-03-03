@@ -1,0 +1,48 @@
+define([
+  "jquery"
+  ], function($) {
+  window.fbAsyncInit = function() {
+      FB.init({
+          appId       : '283758328327079',
+          status      : true,
+          xfbml       : true,
+      });
+  };
+
+  (function(d, s, id){
+      var js, fjs = d.getElementsByTagName(s)[0];
+      if (d.getElementById(id)) {return;}
+      js = d.createElement(s); js.id = id;
+      js.src = "//connect.facebook.net/en_US/all.js";
+      fjs.parentNode.insertBefore(js, fjs);
+  }(document, 'script', 'facebook-jssdk'));
+
+  $(".social-icon.facebook a").click(function(e) {
+      e.preventDefault();
+      FB.ui({
+          method: 'feed',
+          name: $(this).data("name"),
+          description: $(this).data("desc"),
+          link: this.href,
+          picture: $(this).data("picture")
+      });
+  });
+
+ $('.social-icon.twitter a').click(function(e) {
+     e.preventDefault();
+     var width  = 575,
+     height = 400,
+     left   = ($(window).width()  - width)  / 2,
+     top    = ($(window).height() - height) / 2,
+     url    = "https://twitter.com/intent/tweet?url=" + this.href + 
+              ";text=" + $(this).data("desc"),
+     opts   = 'status=1' +
+     ',width='  + width  +
+     ',height=' + height +
+     ',top='    + top    +
+     ',left='   + left;
+ 
+     window.open(url, 'twitter', opts);
+     return false;
+ });
+});

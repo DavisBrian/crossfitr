@@ -1,0 +1,30 @@
+define([
+  "jquery"
+  ], function($) {
+    $('[data-youtube-loader]').each(function() {
+      var loaded = false;
+      var $loader = $(this);
+      var $btn = $loader.find('[data-youtube-loader-play-button]');
+      var $embedContainer = $loader.find('[data-youtube-loader-embed-id]');
+      var embedId = $embedContainer.data('youtube-loader-embed-id');
+      $btn.click(function() {
+        if (loaded) return;
+        var iframe = document.createElement( "iframe" );
+        iframe.setAttribute("class", "js-youtube-iframe");
+        iframe.setAttribute("frameborder", "0");
+        iframe.setAttribute("allowfullscreen", "");
+        iframe.setAttribute(
+          "src",
+          "https://www.youtube.com/embed/" +
+            embedId +
+            "?rel=0&showinfo=0&enablejsapi=1&version=3&autoplay=1"
+        );
+        $embedContainer.append(iframe);
+        $loader.addClass('playing');
+        loaded = true;
+      });
+    });
+  });
+
+
+

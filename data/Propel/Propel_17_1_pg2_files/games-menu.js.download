@@ -1,0 +1,28 @@
+define([
+  "jquery",
+  "underscore"
+  ], function($, _) {
+    var $gamesMenu = $('#gamesMenu');
+    var currentLocation = document.location.pathname.split("/");
+    if (currentLocation.length >= 2) {
+        $gamesMenu.find('.' + currentLocation[1] + '-main-nav').addClass('active');
+    }
+    if ($gamesMenu.length > 0) {
+      var lastScrollTop = 0;
+      var navbarHeight = ($gamesMenu.outerHeight() + $('#globalMenu').outerHeight());
+      var updateMenu = function() {
+        var st = $(this).scrollTop();
+        if (st > lastScrollTop && st > navbarHeight) {
+          $gamesMenu.removeClass('nav-show').addClass('nav-small');
+        } else {
+          if(st === 0 ) {
+            $gamesMenu.removeClass('nav-show').removeClass('nav-small');
+          }
+        }
+        lastScrollTop = st;
+      } 
+
+      var throttledUpdateMenu = _.throttle(updateMenu, 100);
+      $(window).scroll(throttledUpdateMenu);
+    }
+  })

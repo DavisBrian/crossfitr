@@ -1,0 +1,94 @@
+define([ "jquery", "mustache" ], function($, mustache) {
+
+  $('a.cficon-hamburger').click(function(){
+    $('ul.main-nav').toggleClass('mobile');
+  });
+
+  // games specific
+  $('.js-games-hamburger').click(function(e) {
+    $('ul.main-nav').toggleClass('mobile');
+    $(e.currentTarget).toggleClass('is-active');
+  });
+
+  $(document).on('click', '.mobile li > a.main-menu-item', function(){
+    $this = $(this);
+    $this.next('ul').toggle();
+    $this.find('i').toggleClass('up');
+  });
+
+  $(document).on('click', '.main-menu-item', function(e){
+      e.preventDefault();
+      $this = $(this);
+      var href = $this.data('href');
+      if($(window).width() > 993 && href !== undefined ) {
+        window.location.href = href;
+      }
+  });
+
+  var get = {
+    menu: function(data, param){
+      $.get("/cf/views/partials/global-menu/" + param + ".mustache", function(template) {
+        mustache.parse(template);
+      })
+      .done(function(template){
+
+        var output  = mustache.render(template, data);
+        var $this   = $("#" + param);
+
+        if (param != 'login') {
+
+          var width = 0;
+          $this.append(output);
+
+          $("#" + param + " > ul.media-container > li > ul > li").each(function(){
+            $this = $(this);
+            width += ( $this.outerWidth(true) * 1 );
+          });
+
+          $("#" + param + " > ul.media-container > li").width(width);
+
+        } else {
+
+          // Trigger event to let other scripts know that the user has been loaded
+          $(document).trigger('cf-user-loaded', data);
+
+          // CHECKS TO SEE IF USER THAT IS LOGIN IS REGISTERED FOR COMP
+          // IF SO, HIDE SIZZLE VIDEO
+          if (data.login.registered) {
+              $('#registeredCheck').hide();
+          }
+
+          $this.html(output);
+
+          // Add login / logout / profile links to mobile menu
+          $.get("/cf/views/partials/global-menu/mobile.mustache", function(template) {
+            mustache.parse(template);
+          }).done(function(template){
+              var output  = mustache.render(template, data);
+              $('#loginMobile').html(output);
+          });
+        }
+      });
+    },
+    menuData: function( param ){
+      $.ajax({
+        url: "/cf/global-menu?"+param,
+        async: true,
+        type: "GET",
+        dataType: "json",
+        success: function (data) {
+          get.menu(data, param);
+        }
+      });
+    }
+  };
+
+  get.menuData('login');
+  get.menuData('exercise');
+  get.menuData('games');
+  get.menuData('journal');
+  get.menuData('affiliates');
+
+  return user = get;
+
+});

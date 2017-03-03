@@ -1,0 +1,13 @@
+define([
+  "jquery"
+  ], function($) {
+
+    var $container = $('.js-workout-tabs');
+    $container.find('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+      // pause all videos
+      $('.js-youtube-iframe').each(function() {
+        $(this)[0].contentWindow.postMessage('{"event":"command","func":"' + 'pauseVideo' + '","args":""}', '*');  
+      });
+    });
+  });
+

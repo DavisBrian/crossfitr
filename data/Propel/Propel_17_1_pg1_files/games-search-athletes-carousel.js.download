@@ -1,0 +1,41 @@
+define([
+  "jquery", "slick"
+  ], function($) {
+
+    $('#search .search-results').show();
+    var $carouselAthletes = $('#search .search-results .carousel');
+    $carouselAthletes.each(function() {
+      $(this).find('>ul').slick({
+        slidesToShow: 5,
+        slidesToScroll: 5,
+        prevArrow: $(this).find('.js-arrow-left'),
+        nextArrow: $(this).find('.js-arrow-right'),
+        responsive: [
+          {
+            breakpoint: 993,
+            settings: {
+              slidesToShow: 2,
+              slidesToScroll: 2,
+              prevArrow: $(this).find('.js-arrow-left'),
+              nextArrow: $(this).find('.js-arrow-right'),
+            }
+          },
+          {
+            breakpoint: 500,
+            settings: {
+              slidesToShow: 1,
+              slidesToScroll: 1,
+              prevArrow: $(this).find('.js-arrow-left'),
+              nextArrow: $(this).find('.js-arrow-right'),
+            }
+          }
+        ]
+      });
+    });
+    $('#search a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+      //Slick can't calculate sizes of hidden tabs
+      $('#search .slick-slider').each(function() {
+        $(this).slick("getSlick").refresh();
+      });
+    });
+  });
